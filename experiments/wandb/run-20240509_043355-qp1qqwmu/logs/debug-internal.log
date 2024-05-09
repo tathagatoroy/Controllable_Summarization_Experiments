@@ -1,0 +1,199 @@
+2024-05-09 04:33:55,316 INFO    StreamThr :9665 [internal.py:wandb_internal():86] W&B internal server running at pid: 9665, started at: 2024-05-09 04:33:55.314634
+2024-05-09 04:33:55,319 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: status
+2024-05-09 04:33:55,323 INFO    WriterThread:9665 [datastore.py:open_for_write():87] open: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/run-qp1qqwmu.wandb
+2024-05-09 04:33:55,327 DEBUG   SenderThread:9665 [sender.py:send():379] send: header
+2024-05-09 04:33:55,437 DEBUG   SenderThread:9665 [sender.py:send():379] send: run
+2024-05-09 04:33:56,144 INFO    SenderThread:9665 [dir_watcher.py:__init__():211] watching files in: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files
+2024-05-09 04:33:56,144 INFO    SenderThread:9665 [sender.py:_start_run_threads():1124] run started: qp1qqwmu with start time 1715209435.316496
+2024-05-09 04:33:56,172 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: check_version
+2024-05-09 04:33:56,173 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: check_version
+2024-05-09 04:33:56,588 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: run_start
+2024-05-09 04:33:56,607 DEBUG   HandlerThread:9665 [system_info.py:__init__():26] System info init
+2024-05-09 04:33:56,607 DEBUG   HandlerThread:9665 [system_info.py:__init__():41] System info init done
+2024-05-09 04:33:56,607 INFO    HandlerThread:9665 [system_monitor.py:start():194] Starting system monitor
+2024-05-09 04:33:56,607 INFO    SystemMonitor:9665 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2024-05-09 04:33:56,608 INFO    HandlerThread:9665 [system_monitor.py:probe():214] Collecting system info
+2024-05-09 04:33:56,608 INFO    SystemMonitor:9665 [interfaces.py:start():190] Started cpu monitoring
+2024-05-09 04:33:56,610 INFO    SystemMonitor:9665 [interfaces.py:start():190] Started disk monitoring
+2024-05-09 04:33:56,611 INFO    SystemMonitor:9665 [interfaces.py:start():190] Started gpu monitoring
+2024-05-09 04:33:56,612 INFO    SystemMonitor:9665 [interfaces.py:start():190] Started memory monitoring
+2024-05-09 04:33:56,613 INFO    SystemMonitor:9665 [interfaces.py:start():190] Started network monitoring
+2024-05-09 04:33:56,657 DEBUG   HandlerThread:9665 [system_info.py:probe():150] Probing system
+2024-05-09 04:33:56,664 DEBUG   HandlerThread:9665 [system_info.py:_probe_git():135] Probing git
+2024-05-09 04:33:56,691 DEBUG   HandlerThread:9665 [system_info.py:_probe_git():143] Probing git done
+2024-05-09 04:33:56,691 DEBUG   HandlerThread:9665 [system_info.py:probe():198] Probing system done
+2024-05-09 04:33:56,691 DEBUG   HandlerThread:9665 [system_monitor.py:probe():223] {'os': 'Linux-4.15.0-213-generic-x86_64-with-glibc2.27', 'python': '3.9.19', 'heartbeatAt': '2024-05-08T23:03:56.657397', 'startedAt': '2024-05-08T23:03:55.252897', 'docker': None, 'cuda': None, 'args': (), 'state': 'running', 'program': '/home2/tathagato/summarization/MACSum/experiments/test_finetune_phi.py', 'codePathLocal': 'test_finetune_phi.py', 'codePath': 'experiments/test_finetune_phi.py', 'git': {'remote': 'https://github.com/tathagatoroy/MACSum.git', 'commit': 'e35ab31369b63ca4f3db8d81ee9c2975cd319542'}, 'email': 'tathagatoroy3@gmail.com', 'root': '/home2/tathagato/summarization/MACSum', 'host': 'gnode080', 'username': 'tathagato', 'executable': '/home2/tathagato/miniconda3/envs/roy/bin/python', 'cpu_count': 20, 'cpu_count_logical': 40, 'cpu_freq': {'current': 1635.5780499999996, 'min': 1200.0, 'max': 3400.0}, 'cpu_freq_per_core': [{'current': 1345.19, 'min': 1200.0, 'max': 3400.0}, {'current': 1201.974, 'min': 1200.0, 'max': 3400.0}, {'current': 1202.5, 'min': 1200.0, 'max': 3400.0}, {'current': 2402.438, 'min': 1200.0, 'max': 3400.0}, {'current': 2165.397, 'min': 1200.0, 'max': 3400.0}, {'current': 1888.695, 'min': 1200.0, 'max': 3400.0}, {'current': 1861.592, 'min': 1200.0, 'max': 3400.0}, {'current': 2285.11, 'min': 1200.0, 'max': 3400.0}, {'current': 2371.959, 'min': 1200.0, 'max': 3400.0}, {'current': 2405.217, 'min': 1200.0, 'max': 3400.0}, {'current': 1381.247, 'min': 1200.0, 'max': 3400.0}, {'current': 2399.435, 'min': 1200.0, 'max': 3400.0}, {'current': 1203.588, 'min': 1200.0, 'max': 3400.0}, {'current': 1202.969, 'min': 1200.0, 'max': 3400.0}, {'current': 1292.111, 'min': 1200.0, 'max': 3400.0}, {'current': 1202.469, 'min': 1200.0, 'max': 3400.0}, {'current': 1202.698, 'min': 1200.0, 'max': 3400.0}, {'current': 1202.712, 'min': 1200.0, 'max': 3400.0}, {'current': 1203.502, 'min': 1200.0, 'max': 3400.0}, {'current': 1203.245, 'min': 1200.0, 'max': 3400.0}, {'current': 1406.902, 'min': 1200.0, 'max': 3400.0}, {'current': 1200.678, 'min': 1200.0, 'max': 3400.0}, {'current': 1201.211, 'min': 1200.0, 'max': 3400.0}, {'current': 2400.18, 'min': 1200.0, 'max': 3400.0}, {'current': 2201.707, 'min': 1200.0, 'max': 3400.0}, {'current': 1825.489, 'min': 1200.0, 'max': 3400.0}, {'current': 2017.288, 'min': 1200.0, 'max': 3400.0}, {'current': 2166.073, 'min': 1200.0, 'max': 3400.0}, {'current': 2310.63, 'min': 1200.0, 'max': 3400.0}, {'current': 2401.354, 'min': 1200.0, 'max': 3400.0}, {'current': 1262.022, 'min': 1200.0, 'max': 3400.0}, {'current': 2400.187, 'min': 1200.0, 'max': 3400.0}, {'current': 1201.782, 'min': 1200.0, 'max': 3400.0}, {'current': 1201.44, 'min': 1200.0, 'max': 3400.0}, {'current': 1287.255, 'min': 1200.0, 'max': 3400.0}, {'current': 1201.132, 'min': 1200.0, 'max': 3400.0}, {'current': 1200.804, 'min': 1200.0, 'max': 3400.0}, {'current': 1200.61, 'min': 1200.0, 'max': 3400.0}, {'current': 1201.44, 'min': 1200.0, 'max': 3400.0}, {'current': 1200.662, 'min': 1200.0, 'max': 3400.0}], 'disk': {'/': {'total': 219.00129318237305, 'used': 64.8737678527832}}, 'gpu': 'NVIDIA GeForce RTX 2080 Ti', 'gpu_count': 4, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 2080 Ti', 'memory_total': 11811160064}, {'name': 'NVIDIA GeForce RTX 2080 Ti', 'memory_total': 11811160064}, {'name': 'NVIDIA GeForce RTX 2080 Ti', 'memory_total': 11811160064}, {'name': 'NVIDIA GeForce RTX 2080 Ti', 'memory_total': 11811160064}], 'memory': {'total': 125.78252792358398}}
+2024-05-09 04:33:56,692 INFO    HandlerThread:9665 [system_monitor.py:probe():224] Finished collecting system info
+2024-05-09 04:33:56,692 INFO    HandlerThread:9665 [system_monitor.py:probe():227] Publishing system info
+2024-05-09 04:33:56,692 DEBUG   HandlerThread:9665 [system_info.py:_save_conda():207] Saving list of conda packages installed into the current environment
+2024-05-09 04:33:57,149 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_created():271] file/dir created: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/conda-environment.yaml
+2024-05-09 04:34:02,027 DEBUG   HandlerThread:9665 [system_info.py:_save_conda():222] Saving conda packages done
+2024-05-09 04:34:02,031 INFO    HandlerThread:9665 [system_monitor.py:probe():229] Finished publishing system info
+2024-05-09 04:34:02,037 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: status_report
+2024-05-09 04:34:02,038 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: keepalive
+2024-05-09 04:34:02,039 DEBUG   SenderThread:9665 [sender.py:send():379] send: files
+2024-05-09 04:34:02,039 INFO    SenderThread:9665 [sender.py:_save_file():1390] saving file wandb-metadata.json with policy now
+2024-05-09 04:34:02,150 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/conda-environment.yaml
+2024-05-09 04:34:02,150 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_created():271] file/dir created: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/wandb-metadata.json
+2024-05-09 04:34:02,306 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: python_packages
+2024-05-09 04:34:02,307 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: python_packages
+2024-05-09 04:34:02,308 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: internal_messages
+2024-05-09 04:34:02,310 DEBUG   SenderThread:9665 [sender.py:send():379] send: telemetry
+2024-05-09 04:34:02,358 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: stop_status
+2024-05-09 04:34:02,359 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: stop_status
+2024-05-09 04:34:02,773 DEBUG   SenderThread:9665 [sender.py:send():379] send: config
+2024-05-09 04:34:02,775 DEBUG   SenderThread:9665 [sender.py:send():379] send: metric
+2024-05-09 04:34:02,775 DEBUG   SenderThread:9665 [sender.py:send():379] send: telemetry
+2024-05-09 04:34:02,776 DEBUG   SenderThread:9665 [sender.py:send():379] send: metric
+2024-05-09 04:34:02,776 WARNING SenderThread:9665 [sender.py:send_metric():1341] Seen metric with glob (shouldn't happen)
+2024-05-09 04:34:02,776 DEBUG   SenderThread:9665 [sender.py:send():379] send: telemetry
+2024-05-09 04:34:03,131 INFO    wandb-upload_0:9665 [upload_job.py:push():131] Uploaded file /tmp/tmps3yzimgmwandb/4ekx1qsg-wandb-metadata.json
+2024-05-09 04:34:03,151 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_created():271] file/dir created: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/output.log
+2024-05-09 04:34:03,152 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_created():271] file/dir created: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/requirements.txt
+2024-05-09 04:34:05,153 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/output.log
+2024-05-09 04:34:05,778 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: status_report
+2024-05-09 04:34:09,727 DEBUG   SenderThread:9665 [sender.py:send():379] send: exit
+2024-05-09 04:34:09,728 INFO    SenderThread:9665 [sender.py:send_exit():586] handling exit code: 1
+2024-05-09 04:34:09,728 INFO    SenderThread:9665 [sender.py:send_exit():588] handling runtime: 13
+2024-05-09 04:34:09,732 INFO    SenderThread:9665 [sender.py:_save_file():1390] saving file wandb-summary.json with policy end
+2024-05-09 04:34:09,732 INFO    SenderThread:9665 [sender.py:send_exit():594] send defer
+2024-05-09 04:34:09,733 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:09,733 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 0
+2024-05-09 04:34:09,734 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:09,734 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 0
+2024-05-09 04:34:09,734 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 1
+2024-05-09 04:34:09,734 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:09,734 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 1
+2024-05-09 04:34:09,735 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:09,735 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 1
+2024-05-09 04:34:09,735 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 2
+2024-05-09 04:34:09,735 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:09,735 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 2
+2024-05-09 04:34:09,735 INFO    HandlerThread:9665 [system_monitor.py:finish():203] Stopping system monitor
+2024-05-09 04:34:09,736 INFO    HandlerThread:9665 [interfaces.py:finish():202] Joined cpu monitor
+2024-05-09 04:34:09,737 INFO    HandlerThread:9665 [interfaces.py:finish():202] Joined disk monitor
+2024-05-09 04:34:09,737 DEBUG   SystemMonitor:9665 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2024-05-09 04:34:09,737 DEBUG   SystemMonitor:9665 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2024-05-09 04:34:09,738 DEBUG   SystemMonitor:9665 [system_monitor.py:_start():183] Publishing last batch of metrics
+2024-05-09 04:34:10,075 INFO    HandlerThread:9665 [interfaces.py:finish():202] Joined gpu monitor
+2024-05-09 04:34:10,076 INFO    HandlerThread:9665 [interfaces.py:finish():202] Joined memory monitor
+2024-05-09 04:34:10,076 INFO    HandlerThread:9665 [interfaces.py:finish():202] Joined network monitor
+2024-05-09 04:34:10,078 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,078 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 2
+2024-05-09 04:34:10,078 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 3
+2024-05-09 04:34:10,078 DEBUG   SenderThread:9665 [sender.py:send():379] send: stats
+2024-05-09 04:34:10,078 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:10,079 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 3
+2024-05-09 04:34:10,079 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,079 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 3
+2024-05-09 04:34:10,079 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 4
+2024-05-09 04:34:10,080 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:10,080 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 4
+2024-05-09 04:34:10,081 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,081 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 4
+2024-05-09 04:34:10,081 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 5
+2024-05-09 04:34:10,081 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:10,081 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 5
+2024-05-09 04:34:10,082 DEBUG   SenderThread:9665 [sender.py:send():379] send: summary
+2024-05-09 04:34:10,083 INFO    SenderThread:9665 [sender.py:_save_file():1390] saving file wandb-summary.json with policy end
+2024-05-09 04:34:10,084 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,084 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 5
+2024-05-09 04:34:10,084 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 6
+2024-05-09 04:34:10,084 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:10,084 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 6
+2024-05-09 04:34:10,085 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,085 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 6
+2024-05-09 04:34:10,089 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: status_report
+2024-05-09 04:34:10,159 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_created():271] file/dir created: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/wandb-summary.json
+2024-05-09 04:34:10,465 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 7
+2024-05-09 04:34:10,465 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:10,465 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 7
+2024-05-09 04:34:10,466 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,466 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 7
+2024-05-09 04:34:10,727 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: poll_exit
+2024-05-09 04:34:10,860 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 8
+2024-05-09 04:34:10,860 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: poll_exit
+2024-05-09 04:34:10,860 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:10,861 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 8
+2024-05-09 04:34:10,862 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:10,862 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 8
+2024-05-09 04:34:10,862 INFO    SenderThread:9665 [job_builder.py:build():318] Attempting to build job artifact
+2024-05-09 04:34:10,865 INFO    SenderThread:9665 [job_builder.py:_get_source_type():455] is repo sourced job
+2024-05-09 04:34:10,962 INFO    SenderThread:9665 [job_builder.py:build():431] adding wandb-job metadata file
+2024-05-09 04:34:11,023 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 9
+2024-05-09 04:34:11,024 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:11,024 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 9
+2024-05-09 04:34:11,024 DEBUG   SenderThread:9665 [sender.py:send():379] send: artifact
+2024-05-09 04:34:11,160 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/config.yaml
+2024-05-09 04:34:11,161 INFO    Thread-12 :9665 [dir_watcher.py:_on_file_modified():288] file/dir modified: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/output.log
+2024-05-09 04:34:11,729 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: poll_exit
+2024-05-09 04:34:12,453 INFO    SenderThread:9665 [sender.py:send_artifact():1468] sent artifact job-https___github.com_tathagatoroy_MACSum.git_experiments_test_finetune_phi.py - {'id': 'QXJ0aWZhY3Q6ODI4MDIyODUz', 'state': 'COMMITTED', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjE3MjIxNzQ3Mw==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6ODI4MDIyODUz', 'versionIndex': 2}}}
+2024-05-09 04:34:12,453 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:12,453 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 9
+2024-05-09 04:34:12,454 INFO    SenderThread:9665 [dir_watcher.py:finish():358] shutting down directory watcher
+2024-05-09 04:34:13,163 INFO    SenderThread:9665 [dir_watcher.py:finish():388] scan: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files
+2024-05-09 04:34:13,164 INFO    SenderThread:9665 [dir_watcher.py:finish():402] scan save: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/requirements.txt requirements.txt
+2024-05-09 04:34:13,165 INFO    SenderThread:9665 [dir_watcher.py:finish():402] scan save: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/wandb-summary.json wandb-summary.json
+2024-05-09 04:34:13,169 INFO    SenderThread:9665 [dir_watcher.py:finish():402] scan save: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/config.yaml config.yaml
+2024-05-09 04:34:13,174 INFO    SenderThread:9665 [dir_watcher.py:finish():402] scan save: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/output.log output.log
+2024-05-09 04:34:13,176 INFO    SenderThread:9665 [dir_watcher.py:finish():402] scan save: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/conda-environment.yaml conda-environment.yaml
+2024-05-09 04:34:13,181 INFO    SenderThread:9665 [dir_watcher.py:finish():402] scan save: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/wandb-metadata.json wandb-metadata.json
+2024-05-09 04:34:13,182 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 10
+2024-05-09 04:34:13,183 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: poll_exit
+2024-05-09 04:34:13,183 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:13,189 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 10
+2024-05-09 04:34:13,195 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:13,195 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 10
+2024-05-09 04:34:13,196 INFO    SenderThread:9665 [file_pusher.py:finish():172] shutting down file pusher
+2024-05-09 04:34:13,731 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: poll_exit
+2024-05-09 04:34:13,731 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: poll_exit
+2024-05-09 04:34:13,812 INFO    wandb-upload_1:9665 [upload_job.py:push():131] Uploaded file /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/wandb-summary.json
+2024-05-09 04:34:14,207 INFO    wandb-upload_2:9665 [upload_job.py:push():131] Uploaded file /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/config.yaml
+2024-05-09 04:34:14,213 INFO    wandb-upload_0:9665 [upload_job.py:push():131] Uploaded file /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/requirements.txt
+2024-05-09 04:34:14,444 INFO    wandb-upload_3:9665 [upload_job.py:push():131] Uploaded file /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/output.log
+2024-05-09 04:34:14,648 INFO    wandb-upload_4:9665 [upload_job.py:push():131] Uploaded file /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/files/conda-environment.yaml
+2024-05-09 04:34:14,732 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: poll_exit
+2024-05-09 04:34:14,732 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: poll_exit
+2024-05-09 04:34:14,848 INFO    Thread-11 :9665 [sender.py:transition_state():614] send defer: 11
+2024-05-09 04:34:14,849 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:14,849 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 11
+2024-05-09 04:34:14,850 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:14,850 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 11
+2024-05-09 04:34:14,850 INFO    SenderThread:9665 [file_pusher.py:join():178] waiting for file pusher
+2024-05-09 04:34:14,850 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 12
+2024-05-09 04:34:14,851 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:14,851 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 12
+2024-05-09 04:34:14,852 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:14,852 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 12
+2024-05-09 04:34:14,852 INFO    SenderThread:9665 [file_stream.py:finish():614] file stream finish called
+2024-05-09 04:34:15,136 INFO    SenderThread:9665 [file_stream.py:finish():618] file stream finish is done
+2024-05-09 04:34:15,136 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 13
+2024-05-09 04:34:15,136 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:15,136 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 13
+2024-05-09 04:34:15,137 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:15,137 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 13
+2024-05-09 04:34:15,137 INFO    SenderThread:9665 [sender.py:transition_state():614] send defer: 14
+2024-05-09 04:34:15,138 DEBUG   SenderThread:9665 [sender.py:send():379] send: final
+2024-05-09 04:34:15,138 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: defer
+2024-05-09 04:34:15,139 DEBUG   SenderThread:9665 [sender.py:send():379] send: footer
+2024-05-09 04:34:15,139 INFO    HandlerThread:9665 [handler.py:handle_request_defer():172] handle defer: 14
+2024-05-09 04:34:15,140 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: defer
+2024-05-09 04:34:15,140 INFO    SenderThread:9665 [sender.py:send_request_defer():610] handle sender defer: 14
+2024-05-09 04:34:15,141 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: poll_exit
+2024-05-09 04:34:15,142 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: poll_exit
+2024-05-09 04:34:15,142 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: poll_exit
+2024-05-09 04:34:15,143 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: poll_exit
+2024-05-09 04:34:15,144 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: server_info
+2024-05-09 04:34:15,144 DEBUG   SenderThread:9665 [sender.py:send_request():406] send_request: server_info
+2024-05-09 04:34:15,145 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: get_summary
+2024-05-09 04:34:15,150 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: sampled_history
+2024-05-09 04:34:15,150 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: internal_messages
+2024-05-09 04:34:15,418 INFO    MainThread:9665 [wandb_run.py:_footer_history_summary_info():3936] rendering history
+2024-05-09 04:34:15,418 INFO    MainThread:9665 [wandb_run.py:_footer_history_summary_info():3968] rendering summary
+2024-05-09 04:34:15,418 INFO    MainThread:9665 [wandb_run.py:_footer_sync_info():3895] logging synced files
+2024-05-09 04:34:15,419 DEBUG   HandlerThread:9665 [handler.py:handle_request():146] handle_request: shutdown
+2024-05-09 04:34:15,420 INFO    HandlerThread:9665 [handler.py:finish():866] shutting down handler
+2024-05-09 04:34:16,145 INFO    WriterThread:9665 [datastore.py:close():296] close: /home2/tathagato/summarization/MACSum/experiments/wandb/run-20240509_043355-qp1qqwmu/run-qp1qqwmu.wandb
+2024-05-09 04:34:16,418 INFO    SenderThread:9665 [sender.py:finish():1546] shutting down sender
+2024-05-09 04:34:16,418 INFO    SenderThread:9665 [file_pusher.py:finish():172] shutting down file pusher
+2024-05-09 04:34:16,418 INFO    SenderThread:9665 [file_pusher.py:join():178] waiting for file pusher

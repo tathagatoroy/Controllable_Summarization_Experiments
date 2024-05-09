@@ -1,0 +1,260 @@
+{
+    "os": "Linux-4.15.0-213-generic-x86_64-with-glibc2.27",
+    "python": "3.9.19",
+    "heartbeatAt": "2024-05-08T23:50:43.705208",
+    "startedAt": "2024-05-08T23:50:42.240768",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "/home2/tathagato/summarization/MACSum/experiments/finetune_gemma.py",
+    "codePathLocal": "finetune_gemma.py",
+    "codePath": "experiments/finetune_gemma.py",
+    "git": {
+        "remote": "https://github.com/tathagatoroy/MACSum.git",
+        "commit": "e35ab31369b63ca4f3db8d81ee9c2975cd319542"
+    },
+    "email": "tathagatoroy3@gmail.com",
+    "root": "/home2/tathagato/summarization/MACSum",
+    "host": "gnode080",
+    "username": "tathagato",
+    "executable": "/home2/tathagato/miniconda3/envs/roy/bin/python",
+    "cpu_count": 20,
+    "cpu_count_logical": 40,
+    "cpu_freq": {
+        "current": 1248.144575,
+        "min": 1200.0,
+        "max": 3400.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.498,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1717.356,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.766,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.509,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.619,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.916,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.616,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1204.001,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1203.169,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.673,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.926,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1201.874,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1203.03,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1303.021,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1283.905,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1201.325,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.587,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1804.436,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.972,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1202.633,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.55,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1295.391,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.59,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.366,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.592,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.942,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.935,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.118,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.531,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1201.237,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1201.276,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1201.136,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.424,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1272.77,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1478.665,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.835,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1201.333,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1800.838,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.643,
+            "min": 1200.0,
+            "max": 3400.0
+        },
+        {
+            "current": 1200.933,
+            "min": 1200.0,
+            "max": 3400.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 219.00129318237305,
+            "used": 64.87377548217773
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 2080 Ti",
+    "gpu_count": 4,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 2080 Ti",
+            "memory_total": 11811160064
+        },
+        {
+            "name": "NVIDIA GeForce RTX 2080 Ti",
+            "memory_total": 11811160064
+        },
+        {
+            "name": "NVIDIA GeForce RTX 2080 Ti",
+            "memory_total": 11811160064
+        },
+        {
+            "name": "NVIDIA GeForce RTX 2080 Ti",
+            "memory_total": 11811160064
+        }
+    ],
+    "memory": {
+        "total": 125.78252792358398
+    }
+}

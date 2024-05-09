@@ -1,0 +1,13 @@
+
+dataset formatting : https://github.com/huggingface/trl/pull/444
+qlora : https://colab.research.google.com/drive/1VoYNfYDKcKRQRor98Zbf2-9VQTtGJ24k?usp=sharing#scrollTo=jq0nX33BmfaC
+accelerate : https://huggingface.co/docs/transformers/main/en/accelerate
+
+qlora + peft + accelerate : https://huggingface.co/docs/trl/en/lora_tuning_peft
+
+accelerate config pathn : /home2/tathagato/.cache/huggingface/accelerate/default_config.yaml 
+https://github.com/huggingface/blog/blob/main/accelerate-large-models.md
+
+
+
+

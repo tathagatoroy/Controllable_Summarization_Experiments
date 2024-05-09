@@ -1,0 +1,9 @@
+base_dir = "/scratch/tathagato/openelm_adapter_experiments"
+length = "/scratch/tathagato/openelm_adapter_experiments/2024-05-01-18-26-09_length/checkpoint-4278"
+
+extractivenss = "/scratch/tathagato/openelm_adapter_experiments/2024-05-01-19-01-27_extractiveness/checkpoint-8556"
+
+length_extractiveness = "/scratch/tathagato/openelm_adapter_experiments/2024-05-02-05-14-47_extractiveness/checkpoint-4278"
+
+extractiveness_lenth = "/scratch/tathagato/openelm_adapter_experiments/2024-05-02-05-14-12_length/checkpoint-4278"
+

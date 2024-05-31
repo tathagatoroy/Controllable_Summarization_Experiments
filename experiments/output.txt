@@ -1,145 +1,206 @@
-2024-05-09 04:38:34 - WARNING - __main__ - Process rank: 0, device: cuda:0, n_gpu: 4 distributed training: True, 16-bits training: True
-2024-05-09 04:38:34 - INFO - __main__ - Training/evaluation parameters TrainingArguments(
-_n_gpu=4,
-accelerator_config={'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True},
-adafactor=False,
-adam_beta1=0.9,
-adam_beta2=0.999,
-adam_epsilon=1e-08,
-auto_find_batch_size=False,
-bf16=False,
-bf16_full_eval=False,
-data_seed=None,
-dataloader_drop_last=False,
-dataloader_num_workers=0,
-dataloader_persistent_workers=False,
-dataloader_pin_memory=True,
-dataloader_prefetch_factor=None,
-ddp_backend=None,
-ddp_broadcast_buffers=None,
-ddp_bucket_cap_mb=None,
-ddp_find_unused_parameters=None,
-ddp_timeout=1800,
-debug=[],
-deepspeed=None,
-disable_tqdm=False,
-dispatch_batches=None,
-do_eval=False,
-do_predict=False,
-do_train=False,
-eval_accumulation_steps=None,
-eval_delay=0,
-eval_steps=None,
-evaluation_strategy=no,
-fp16=True,
-fp16_backend=auto,
-fp16_full_eval=False,
-fp16_opt_level=O1,
-fsdp=[],
-fsdp_config={'min_num_params': 0, 'xla': False, 'xla_fsdp_v2': False, 'xla_fsdp_grad_ckpt': False},
-fsdp_min_num_params=0,
-fsdp_transformer_layer_cls_to_wrap=None,
-full_determinism=False,
-gradient_accumulation_steps=1,
-gradient_checkpointing=True,
-gradient_checkpointing_kwargs={'use_reentrant': False},
-greater_is_better=None,
-group_by_length=False,
-half_precision_backend=auto,
-hub_always_push=False,
-hub_model_id=None,
-hub_private_repo=False,
-hub_strategy=every_save,
-hub_token=<HUB_TOKEN>,
-ignore_data_skip=False,
-include_inputs_for_metrics=False,
-include_num_input_tokens_seen=False,
-include_tokens_per_second=False,
-jit_mode_eval=False,
-label_names=None,
-label_smoothing_factor=0.0,
-learning_rate=5e-06,
-length_column_name=length,
-load_best_model_at_end=False,
-local_rank=0,
-log_level=info,
-log_level_replica=warning,
-log_on_each_node=True,
-logging_dir=/scratch/tathagato/openelm_adapter_experiment/runs/May09_04-38-34_gnode080,
-logging_first_step=False,
-logging_nan_inf_filter=True,
-logging_steps=20,
-logging_strategy=steps,
-lr_scheduler_kwargs={},
-lr_scheduler_type=cosine,
-max_grad_norm=1.0,
-max_steps=-1,
-metric_for_best_model=None,
-mp_parameters=,
-neftune_noise_alpha=None,
-no_cuda=False,
-num_train_epochs=1,
-optim=adamw_torch,
-optim_args=None,
-optim_target_modules=None,
-output_dir=/scratch/tathagato/openelm_adapter_experiment,
-overwrite_output_dir=True,
-past_index=-1,
-per_device_eval_batch_size=1,
-per_device_train_batch_size=1,
-prediction_loss_only=False,
-push_to_hub=False,
-push_to_hub_model_id=None,
-push_to_hub_organization=None,
-push_to_hub_token=<PUSH_TO_HUB_TOKEN>,
-ray_scope=last,
-remove_unused_columns=False,
-report_to=['wandb'],
-resume_from_checkpoint=None,
-run_name=/scratch/tathagato/openelm_adapter_experiment,
-save_on_each_node=False,
-save_only_model=False,
-save_safetensors=True,
-save_steps=100,
-save_strategy=steps,
-save_total_limit=1,
-seed=0,
-skip_memory_metrics=True,
-split_batches=None,
-tf32=None,
-torch_compile=False,
-torch_compile_backend=None,
-torch_compile_mode=None,
-torchdynamo=None,
-tpu_metrics_debug=False,
-tpu_num_cores=None,
-use_cpu=False,
-use_ipex=False,
-use_legacy_prediction_loop=False,
-use_mps_device=False,
-warmup_ratio=0.2,
-warmup_steps=0,
-weight_decay=0.0,
+loading first model
+['length']
+PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): LlamaForCausalLM(
+      (model): LlamaModel(
+        (embed_tokens): Embedding(32000, 2048)
+        (layers): ModuleList(
+          (0-21): 22 x LlamaDecoderLayer(
+            (self_attn): LlamaSdpaAttention(
+              (q_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=2048, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=2048, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (k_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=256, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=256, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (v_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=256, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=256, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (o_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=2048, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=2048, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (rotary_emb): LlamaRotaryEmbedding()
+            )
+            (mlp): LlamaMLP(
+              (gate_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+              (up_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+              (down_proj): Linear4bit(in_features=5632, out_features=2048, bias=False)
+              (act_fn): SiLU()
+            )
+            (input_layernorm): LlamaRMSNorm()
+            (post_attention_layernorm): LlamaRMSNorm()
+          )
+        )
+        (norm): LlamaRMSNorm()
+      )
+      (lm_head): Linear(in_features=2048, out_features=32000, bias=False)
+    )
+  )
 )
-2024-05-09 04:38:34 - INFO - __main__ - PEFT parameters LoraConfig(peft_type=<PeftType.LORA: 'LORA'>, auto_mapping=None, base_model_name_or_path=None, revision=None, task_type='CAUSAL_LM', inference_mode=False, r=16, target_modules={'k_proj', 'o_proj', 'v_proj', 'q_proj'}, lora_alpha=32, lora_dropout=0.05, fan_in_fan_out=False, bias='none', use_rslora=False, modules_to_save=None, init_lora_weights=True, layers_to_transform=None, layers_pattern=None, rank_pattern={}, alpha_pattern={}, megatron_config=None, megatron_core='megatron.core', loftq_config={}, use_dora=False, layer_replication=None)
-trainable params: 524363776 || all params: 1515268096 || trainable%: 34.605346564361376
-total model parameters : 524,363,776
-4278
-2024-05-09 04:38:41 - INFO - datasets.arrow_dataset - Spawning 10 processes
-2024-05-09 04:38:50 - INFO - datasets.arrow_dataset - Concatenating 10 shards
-2024-05-09 04:38:51 - INFO - datasets.arrow_dataset - Spawning 10 processes
-2024-05-09 04:38:56 - INFO - datasets.arrow_dataset - Concatenating 10 shards
-2024-05-09 04:38:57 - INFO - datasets.builder - Using custom data configuration default-245f9d0cc88752a0
-2024-05-09 04:38:57 - INFO - datasets.info - Loading Dataset Infos from /home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/datasets/packaged_modules/generator
-2024-05-09 04:38:57 - INFO - datasets.builder - Overwrite dataset info from restored data version if exists.
-2024-05-09 04:38:57 - INFO - datasets.info - Loading Dataset info from /home2/tathagato/.cache/huggingface/datasets/generator/default-245f9d0cc88752a0/0.0.0
-2024-05-09 04:38:57 - INFO - datasets.builder - Found cached dataset generator (/home2/tathagato/.cache/huggingface/datasets/generator/default-245f9d0cc88752a0/0.0.0)
-2024-05-09 04:38:57 - INFO - datasets.info - Loading Dataset info from /home2/tathagato/.cache/huggingface/datasets/generator/default-245f9d0cc88752a0/0.0.0
-2024-05-09 04:38:58 - INFO - datasets.builder - Using custom data configuration default-c0a193c08d553fca
-2024-05-09 04:38:58 - INFO - datasets.info - Loading Dataset Infos from /home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/datasets/packaged_modules/generator
-2024-05-09 04:38:58 - INFO - datasets.builder - Overwrite dataset info from restored data version if exists.
-2024-05-09 04:38:58 - INFO - datasets.info - Loading Dataset info from /home2/tathagato/.cache/huggingface/datasets/generator/default-c0a193c08d553fca/0.0.0
-2024-05-09 04:38:58 - INFO - datasets.builder - Found cached dataset generator (/home2/tathagato/.cache/huggingface/datasets/generator/default-c0a193c08d553fca/0.0.0)
-2024-05-09 04:38:58 - INFO - datasets.info - Loading Dataset info from /home2/tathagato/.cache/huggingface/datasets/generator/default-c0a193c08d553fca/0.0.0
-2024-05-09 04:38:58 - WARNING - accelerate.utils.other - Detected kernel version 4.15.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
-is  model parallelism  ParallelMode.NOT_DISTRIBUTED
+['length', 'topic']
+PeftModelForCausalLM(
+  (base_model): LoraModel(
+    (model): LlamaForCausalLM(
+      (model): LlamaModel(
+        (embed_tokens): Embedding(32000, 2048)
+        (layers): ModuleList(
+          (0-21): 22 x LlamaDecoderLayer(
+            (self_attn): LlamaSdpaAttention(
+              (q_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=2048, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                  (topic): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                  (topic): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=2048, bias=False)
+                  (topic): Linear(in_features=16, out_features=2048, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (k_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=256, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                  (topic): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                  (topic): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=256, bias=False)
+                  (topic): Linear(in_features=16, out_features=256, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (v_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=256, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                  (topic): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                  (topic): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=256, bias=False)
+                  (topic): Linear(in_features=16, out_features=256, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (o_proj): lora.Linear4bit(
+                (base_layer): Linear4bit(in_features=2048, out_features=2048, bias=False)
+                (lora_dropout): ModuleDict(
+                  (length): Dropout(p=0.05, inplace=False)
+                  (topic): Dropout(p=0.05, inplace=False)
+                )
+                (lora_A): ModuleDict(
+                  (length): Linear(in_features=2048, out_features=16, bias=False)
+                  (topic): Linear(in_features=2048, out_features=16, bias=False)
+                )
+                (lora_B): ModuleDict(
+                  (length): Linear(in_features=16, out_features=2048, bias=False)
+                  (topic): Linear(in_features=16, out_features=2048, bias=False)
+                )
+                (lora_embedding_A): ParameterDict()
+                (lora_embedding_B): ParameterDict()
+              )
+              (rotary_emb): LlamaRotaryEmbedding()
+            )
+            (mlp): LlamaMLP(
+              (gate_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+              (up_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+              (down_proj): Linear4bit(in_features=5632, out_features=2048, bias=False)
+              (act_fn): SiLU()
+            )
+            (input_layernorm): LlamaRMSNorm()
+            (post_attention_layernorm): LlamaRMSNorm()
+          )
+        )
+        (norm): LlamaRMSNorm()
+      )
+      (lm_head): Linear(in_features=2048, out_features=32000, bias=False)
+    )
+  )
+)
+['length', 'topic']
+LlamaForCausalLM(
+  (model): LlamaModel(
+    (embed_tokens): Embedding(32000, 2048)
+    (layers): ModuleList(
+      (0-21): 22 x LlamaDecoderLayer(
+        (self_attn): LlamaSdpaAttention(
+          (q_proj): Linear4bit(in_features=2048, out_features=2048, bias=False)
+          (k_proj): Linear4bit(in_features=2048, out_features=256, bias=False)
+          (v_proj): Linear4bit(in_features=2048, out_features=256, bias=False)
+          (o_proj): Linear4bit(in_features=2048, out_features=2048, bias=False)
+          (rotary_emb): LlamaRotaryEmbedding()
+        )
+        (mlp): LlamaMLP(
+          (gate_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+          (up_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+          (down_proj): Linear4bit(in_features=5632, out_features=2048, bias=False)
+          (act_fn): SiLU()
+        )
+        (input_layernorm): LlamaRMSNorm()
+        (post_attention_layernorm): LlamaRMSNorm()
+      )
+    )
+    (norm): LlamaRMSNorm()
+  )
+  (lm_head): Linear(in_features=2048, out_features=32000, bias=False)
+)

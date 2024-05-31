@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_directory", type=str, help="model directory", default = "/scratch/tathagato/openelm_adapter_experiments/2024-05-01-18-26-09_length/checkpoint-4278")
     parser.add_argument("--use_checkpoint", action = "store_true", help="use checkpoint", default = True)
     parser.add_argument("--attributes", nargs = "+", help="attributes", type = str)
-    
+    parser.add_argument("--output_file", type=str, help="output file", default = "/scratch/tathagato/openelm_adapter_experiments/2024-05-01-18-26-09_length/checkpoint-4278")
 
     args = parser.parse_args()
     #print attributes

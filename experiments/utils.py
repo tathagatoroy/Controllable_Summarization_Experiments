@@ -77,7 +77,7 @@ def formatting_prompts_func(examples : dict) -> list:
 
 
 
-
+#def run_inference_model(model, dataset)
 
 def count_model_parameters(model : torch.nn.Module) -> int:
     return sum(p.numel() for p in model.parameters() if p.requires_grad)

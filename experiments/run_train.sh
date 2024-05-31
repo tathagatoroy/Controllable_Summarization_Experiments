@@ -1,0 +1,2 @@
+#!/bin/bash
+accelerate launch test_finetune_phi.py --load_previous_model --previous_model_path /scratch/tathagato/adapter_experiments/2024-05-18-03-29-07_length_length_macsum_TinyLlama/TinyLlama-1.1B-Chat-v1.0

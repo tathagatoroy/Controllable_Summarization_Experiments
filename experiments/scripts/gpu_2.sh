@@ -54,29 +54,85 @@ cd ..
 # --second_adapter_name "length"
 
 # length then topic on length
-python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/length_then_topic \
---output_file ./merged_adapter_results/length_then_topic_evaluate_length.json \
---attribute length
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/length_then_topic \
+# --output_file ./merged_adapter_results/length_then_topic_evaluate_length.json \
+# --attribute length
 
-# length then topic on topic
-python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/length_then_topic \
---output_file ./merged_adapter_results/length_then_topic_evaluate_topic.json \
---attribute topic
+# # length then topic on topic
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/length_then_topic \
+# --output_file ./merged_adapter_results/length_then_topic_evaluate_topic.json \
+# --attribute topic
 
-# topic then length on length
-python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_length \
---output_file ./merged_adapter_results/topic_then_length_evaluate_length.json \
---attribute length
+# # topic then length on length
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_length \
+# --output_file ./merged_adapter_results/topic_then_length_evaluate_length.json \
+# --attribute length
 
-# topic then length on topic
+# # topic then length on topic
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_length \
+# --output_file ./merged_adapter_results/topic_then_length_evaluate_topic.json \
+# --attribute topic
+
+
 python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_length \
---output_file ./merged_adapter_results/topic_then_length_evaluate_topic.json \
---attribute topic
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/length/checkpoint-1000/length \
+--attribute length \
+--output_file ./inference_results/length_evaluate_on_length_1000.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/length/checkpoint-1500/length \
+--attribute length \
+--output_file ./inference_results/length_evaluate_on_length_1500.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/length/length/ \
+--attribute length \
+--output_file ./inference_results/length_evaluate_on_length_final.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/specificity/checkpoint-800/specificity \
+--attribute specificity \
+--output_file ./inference_results/specificity_evaluate_on_specificity_800.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/specificity/checkpoint-1200/specificity \
+--attribute specificity \
+--output_file ./inference_results/specificity_evaluate_on_specificity_1200.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi

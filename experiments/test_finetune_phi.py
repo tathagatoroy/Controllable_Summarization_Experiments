@@ -7,15 +7,88 @@ from peft import LoraConfig,PeftConfig, PeftModel, PeftModelForCausalLM
 import torch
 import transformers
 from trl import SFTTrainer
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig
-from phi_dataset import create_huggingface_dataset_from_dictionary_for_phi , create_multiattribute_dataset_from_dictionary_for_phi
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig,TrainerCallback
 import argparse
 from datetime import datetime
 import os
 from utils import load_dataset_from_path_phi, load_multi_attribute_dataset_from_path,print_trainable_parameters, count_model_parameters
 from transformers import pipeline
+import json
+
 # torch.backends.cuda.enable_mem_efficient_sdp(False)
 # torch.backends.cuda.enable_flash_sdp(False)
+
+
+
+
+def inference(model, tokenizer, processed_test_dataset, batch_size = 4):
+        #running inference using pipeline
+    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, batch_size = 4)
+    prompts = []
+    max_sequence_length = 2048  # Set this to your model's maximum sequence length
+    total_input_size = 0
+    inference_output = {}
+    cur_index = 0
+    index_matches = []
+    for index, example in tqdm.tqdm(enumerate(processed_test_dataset)):
+        messages = example["messages"]
+        messages[-1]["content"] = ""
+        prompt = pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        
+        # Check if the tokenized prompt length exceeds the maximum sequence length
+        tokenized_prompt = pipe.tokenizer(prompt, return_tensors="pt")["input_ids"]
+        prompt_length = tokenized_prompt.size(1)
+        print(f"Example {index} has length {prompt_length}")
+        #print(f"Example {index} has length {prompt_length}")
+        if tokenized_prompt.size(1) > max_sequence_length:
+            #print(f"Skipping example {index} due to length {tokenized_prompt.size(1)} > {max_sequence_length}")
+            total_input_size += 1
+            continue  # Skip this example if it exceeds the maximum sequence length
+
+        prompts.append(prompt)
+        index_matches.append(cur_index)
+        inference_output[cur_index] = {key : example[key] for key in example.keys()}
+        inference_output[cur_index]['prompt_for_inference'] = prompt
+        cur_index += 1
+
+
+        # Check if we have reached the batch size
+        if len(prompts) == batch_size:
+            # Process the batch
+            outputs = pipe(prompts, max_new_tokens=256, do_sample=True, temperature=1, top_k=50, top_p=0.95)
+            size = len(outputs)
+            for i in range(size):
+                inference_output[index_matches[i]]['generated_text'] = outputs[i][0]['generated_text']
+
+
+            # Reset the prompts list for the next batch
+            index_matches = []
+            prompts = []
+        return inference_output
+
+class InferenceCallback(TrainerCallback):
+    def __init__(self, model, tokenizer, data, inference_directory, args):
+        self.model = model
+        self.tokenizer = tokenizer
+        self.data = data
+        self.inference_directory = inference_directory
+        self.args = args
+
+    def on_save(self, args, state, control, **kwargs):
+        # Perform inference
+        outputs = inference(model, tokenizer, test_dataset, batch_size = 4)
+
+        # Save results with the current save step as part of the filename
+        output_file = os.path.join(self.inference_directory, f'{self.args.experiment_name}_evaluate_on_{self.args.attribute}_{state.global_step}.json')
+        #make inference directory if it does not exist
+        os.makedirs(self.inference_directory, exist_ok=True)
+        with open(output_file, 'w') as file:
+            json.dump(outputs, file)
+        
+        # Log the save step
+        print(f'Saved inference results to {output_file} at step {state.global_step}')
+        
+        return control
 
 def apply_inference_chat_template(
         example, 
@@ -25,11 +98,16 @@ def apply_inference_chat_template(
     messages = example["messages"]
     if messages[0]["role"] != "system":
         messages.insert(0, {"role": "system",
-                            "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                            "content": "You are a friendly chatbot who always help the user"
                                 })
     #make assistant part empty
     messages[-1]["content"] = ""
     example["messages_for_inference"] = tokenizer.apply_chat_template(messages, tokenize=False)
+    tokenized_example = tokenizer(example["messages_for_inference"], padding="max_length", truncation=True, max_length=2048)
+    for key in tokenized_example.keys():
+        example[key] = tokenized_example[key]
+    
+    
     return example
 def apply_chat_template(
     example,
@@ -39,10 +117,21 @@ def apply_chat_template(
     # Add an empty system message if there is none
     if messages[0]["role"] != "system":
         messages.insert(0, {"role": "system",
-                            "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                            "content": "You are a friendly chatbot who always help the user"
                                 })
-    example["text"] = tokenizer.apply_chat_template(
+    text = tokenizer.apply_chat_template(
         messages, tokenize=False)
+    #you can give pretokenized dataset to sfft also
+    tokenized_example = tokenizer(text, padding="max_length", truncation=True, max_length=2048)
+    # for key in tokenized_example.keys():
+    #     example[key] = tokenized_example[key]
+    example = {}
+    example["input_ids"] = tokenized_example["input_ids"]
+    example["attention_mask"] = tokenized_example["attention_mask"]
+    example['labels'] = tokenized_example["input_ids"]
+    
+    
+    
     return example
 if __name__ == "__main__":
         #parse the arguments
@@ -56,7 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_dataset_size", type=int, help="train dataset size", default = -1)
     parser.add_argument("--val_dataset_size", type=int, help="val dataset size", default = -1)
     parser.add_argument("--cache_dir", type=str, help="cache directory", default = "/scratch/tathagato")
-    
+    parser.add_argument("--inference_directory", type=str, help="inference directory", default = "./inference_results")
     parser.add_argument("--instruction_template", type=str, help="instruction template", default = "### Instruction:")
     parser.add_argument("--response_template", type=str, help="response template", default = "### Response:")
     
@@ -79,13 +168,13 @@ if __name__ == "__main__":
 
 
     #training args
-    parser.add_argument("--output_dir", type=str, help="output directory", default = "/scratch/tathagato/openelm_adapter_experiments")
+    parser.add_argument("--output_dir", type=str, help="output directory", default = "/scratch/tathagato/redo_adapter_experiments")
     parser.add_argument("--num_train_epochs", type=int, help="number of training epochs", default = 10)
     parser.add_argument("--per_device_train_batch_size", type=int, help="batch size", default = 1)
     parser.add_argument("--gradient_accumulation_steps", type=int, help="gradient accumulation steps", default = 2)
     parser.add_argument("--gradient_checkpointing", type=bool, help="gradient checkpointing", default = True)
     parser.add_argument("--optim", type=str, help="optimizer", default = "adamw_bnb_8bit")
-    parser.add_argument("--learning_rate", type=float, help="learning rate", default = 5e-5)
+    parser.add_argument("--learning_rate", type=float, help="learning rate", default = 6e-4)
     parser.add_argument("--warmup_ratio", type=int, help="warmup steps", default = 0.03)
     parser.add_argument("--max_grad_norm", type=int, help="max grad norm", default = 0.3)
     parser.add_argument("--seed", type=int, help="seed", default = 42)
@@ -104,6 +193,18 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
     #args.output_dir = os.path.join(args.output_dir,args.attribute +  current_date)
     logger = logging.getLogger(__name__)
+    if args.load_previous_model:
+        base_dir_attribute = os.path.basename(args.previous_model_path)
+        args.experiment_name = f"{base_dir_attribute}_then_{args.attribute}"
+        args.output_dir = os.path.join(args.output_dir, args.experiment_name)
+    else:
+        args.experiment_name = f"{args.attribute}"
+        args.output_dir = os.path.join(args.output_dir, args.experiment_name)
+    print("output directory", args.output_dir)
+    print("experiment name", args.experiment_name)
+    args.output_dir = args.output_dir + "_" + str(args.learning_rate)
+    #args.output_dir = "/scratch/tathagato/test"
+    #os.makedirs(args.output_dir, exist_ok=True)
 
 
     ###################
@@ -113,25 +214,26 @@ if __name__ == "__main__":
         "bf16": False,
         "fp16" : True,
         "do_eval": False,
-        "learning_rate": 5e-4,
+        "learning_rate": args.learning_rate,
         "log_level": "info",
         "logging_steps": 20,
         "logging_strategy": "steps",
         "lr_scheduler_type": "cosine",
-        "num_train_epochs": 5,
+        "num_train_epochs": 8,
         "max_steps": -1,
         "output_dir": args.output_dir,
         "overwrite_output_dir": True,
         "per_device_eval_batch_size": 1,
         "per_device_train_batch_size": 1,
         "remove_unused_columns": False,
-        "save_steps": 400,
+        "save_steps": 200,
         "save_total_limit": 400,
         "seed": 0,
         "gradient_checkpointing": True,
         "gradient_checkpointing_kwargs":{"use_reentrant": False},
         "gradient_accumulation_steps": 2,
         "warmup_ratio": 0.2,
+        "neftune_noise_alpha":5,
         }
 
     nf4_config = BitsAndBytesConfig(
@@ -198,6 +300,11 @@ if __name__ == "__main__":
     )
     model = AutoModelForCausalLM.from_pretrained(args.checkpoint_path, **model_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(args.checkpoint_path,cache_dir = "/scratch/tathagato")
+    #tinyllama pad token id is same as eos token id which is bad for finetuning because
+    #either you can't ignore pad token loss as the model will not learnt to predict eos token
+    #else loss will be dominated by pad token loss
+    #so we set the pad token id to unk token id
+    tokenizer.pad_token = tokenizer.unk_token
     if args.load_previous_model:
         print("loading model from : {0}".format(args.previous_model_path))
         model = PeftModelForCausalLM.from_pretrained(model, args.previous_model_path, is_trainable = True)
@@ -218,7 +325,7 @@ if __name__ == "__main__":
     # tokenizer.model_max_length = 2048
     # tokenizer.pad_token = tokenizer.unk_token  # use unk rather than eos token to prevent endless generation
     # tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
-    tokenizer.padding_side = 'left'
+    tokenizer.padding_side = 'right'
 
     print_trainable_parameters(model)
     print("total model parameters : {0}".format(count_model_parameters(model)))
@@ -243,14 +350,17 @@ if __name__ == "__main__":
     train_dataset = train_dataset.select(range(args.train_dataset_size))
     test_dataset = test_dataset.select(range(args.test_dataset_size))
 
-    #train_dataset = train_dataset.select(range(12))
+
+    # train_dataset = train_dataset.select(range(12))
+    # test_dataset = test_dataset.select(range(12))
+
 
 
     print("train dataset size", len(train_dataset))
     print("test dataset size", len(test_dataset))
 
-
-    column_names = []
+    #remove all the columns except the text column
+    column_names = train_dataset.column_names
 
     print(len(train_dataset))
 
@@ -269,80 +379,11 @@ if __name__ == "__main__":
         remove_columns=column_names,
         desc="Applying chat template to test_sft",
     )
-    print("tokenizer padding side", tokenizer.padding_side)
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #print(processed_train_dataset[0]['text'])
-
-    #running inference using pipeline
-    # pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, batch_size = 4)
-
-
-    # # Initialize variables
-    # prompts = []
-    # batch_size = 4 # Adjust the batch size as needed
-    # max_sequence_length = 2048  # Set this to your model's maximum sequence length
-    # dist = {}
-    # all_outputs = []
-    # total_input_size = 0
-    # if args.run_inference:
-    #     inference_output = {}
-    # for index, example in tqdm.tqdm(enumerate(processed_test_dataset)):
-    #     messages = example["messages"]
-    #     messages[-1]["content"] = ""
-    #     prompt = pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        
-    #     # Check if the tokenized prompt length exceeds the maximum sequence length
-    #     tokenized_prompt = pipe.tokenizer(prompt, return_tensors="pt")["input_ids"]
-    #     prompt_length = tokenized_prompt.size(1)
-    #     if prompt_length not in dist:
-    #         dist[prompt_length] = 0
-    #     dist[prompt_length] += 1
-    #     #print(f"Example {index} has length {prompt_length}")
-    #     if tokenized_prompt.size(1) > max_sequence_length:
-    #         #print(f"Skipping example {index} due to length {tokenized_prompt.size(1)} > {max_sequence_length}")
-    #         total_input_size += 1
-    #         continue  # Skip this example if it exceeds the maximum sequence length
-
-    #     prompts.append(prompt)
-
-    #     # Check if we have reached the batch size
-    #     if len(prompts) == batch_size:
-    #         # Process the batch
-    #         print("calling pipe")
-    #         outputs = pipe(prompts, max_new_tokens=256, do_sample=True, temperature=0.7, top_k=50, top_p=0.95)
-            
-    #         # Do something with the outputs
-    #         print(len(outputs))  # Example: print the number of output
-    #         print(outputs[0])
-
-    #         # Reset the prompts list for the next batch
-    #         prompts = []
-    #         for output in outputs:
-    #             all_outputs.append(output)
-        
-
-    # print("dist", dist)
-    # print("total input size", total_input_size)
-    # print("total outputs", len(all_outputs))
-    # print("all outputs", all_outputs, file = open("sample_outputs","w"))
-    # exit()
-
-
-
-
-        
-
-
-
-
-
-
-
-    #print("-----------------------------------------")
-    #print(processed_train_dataset[0])
-    #print("\n\n")
-    # print(processed_test_dataset[0])
-    ###########
+    # for key in processed_train_dataset[0].keys():
+    #     print(key)
+    #     print(processed_train_dataset[0][key])
+    #     print("\n")
+    # ###########
     # Training
     ###########
     trainer = SFTTrainer(
@@ -351,10 +392,17 @@ if __name__ == "__main__":
         peft_config=peft_conf,
         train_dataset=processed_train_dataset,
         max_seq_length=2048,
-        dataset_text_field="text",
         tokenizer=tokenizer,
-        packing=True
+        #callbacks=[InferenceCallback(model, tokenizer, processed_test_dataset, inference_directory=args.inference_directory, args=args)],
+        dataset_text_field = "text",
+        packing = False
+
+
     )
+    #dataloader = trainer.get_train_dataloader()
+    
+    #import code; code.interact(local = locals())
+
     print("is  model parallelism " ,trainer.args.parallel_mode)
 
     train_result = trainer.train()
@@ -381,5 +429,5 @@ if __name__ == "__main__":
     trainer.save_model(train_conf.output_dir)
     
     #merge and unload and save the model
-    model = model.merge_and_unload()
-    model.save_pretrained(os.path.join(train_conf.output_dir,"final_merged_model"))
+    #model = model.merge_and_unload()
+    #model.save_pretrained(os.path.join(train_conf.output_dir,"final_merged_model"))

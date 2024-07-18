@@ -63,29 +63,85 @@ cd ..
 # --second_adapter_name "topic"
 
 # extractiveness then topic on extractiveness
-python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/extractiveness_then_topic \
---output_file ./merged_adapter_results/extractiveness_then_topic_evaluate_extractiveness.json \
---attribute extractiveness
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/extractiveness_then_topic \
+# --output_file ./merged_adapter_results/extractiveness_then_topic_evaluate_extractiveness.json \
+# --attribute extractiveness
 
-# extractiveness then topic on topic
-python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/extractiveness_then_topic \
---output_file ./merged_adapter_results/extractiveness_then_topic_evaluate_topic.json \
---attribute topic
+# # extractiveness then topic on topic
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/extractiveness_then_topic \
+# --output_file ./merged_adapter_results/extractiveness_then_topic_evaluate_topic.json \
+# --attribute topic
 
-# topic then extractiveness on extractiveness
-python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_extractiveness \
---output_file ./merged_adapter_results/topic_then_extractiveness_evaluate_extractiveness.json \
---attribute extractiveness
+# # topic then extractiveness on extractiveness
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_extractiveness \
+# --output_file ./merged_adapter_results/topic_then_extractiveness_evaluate_extractiveness.json \
+# --attribute extractiveness
 
-# topic then extractiveness on topic
+# # topic then extractiveness on topic
+# python do_inference.py \
+# --use_merged_model_checkpoint \
+# --merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_extractiveness \
+# --output_file ./merged_adapter_results/topic_then_extractiveness_evaluate_topic.json \
+# --attribute topic
+
+
 python do_inference.py \
---use_merged_model_checkpoint \
---merged_model_directory /scratch/tathagato/adapter_experiments/topic_then_extractiveness \
---output_file ./merged_adapter_results/topic_then_extractiveness_evaluate_topic.json \
---attribute topic
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/topic/checkpoint-1/topic \
+--attribute topic \
+--output_file ./inference_results/topic_evaluate_on_topic_1.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/topic/checkpoint-500/topic \
+--attribute topic \
+--output_file ./inference_results/topic_evaluate_on_topic_500.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/topic/topic \
+--attribute topic \
+--output_file ./inference_results/topic_evaluate_on_topic_final.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/specificity/checkpoint-200/specificity \
+--attribute specificity \
+--output_file ./inference_results/specificity_evaluate_on_specificity_200.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi
+
+python do_inference.py \
+--use_checkpoint \
+--checkpoint_path /scratch/tathagato/redo_adapter_experiments/specificity/checkpoint-400/specificity \
+--attribute specificity \
+--output_file ./inference_results/specificity_evaluate_on_specificity_400.json
+if [[ $? = 0 ]]; then
+        echo "success"
+else
+        echo "failure"
+fi

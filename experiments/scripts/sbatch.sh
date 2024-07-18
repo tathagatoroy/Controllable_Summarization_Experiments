@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --mem-per-cpu=3000M
 #SBATCH --time=4-00:00:00
-#SBATCH --job-name=one_attribute_inference
+#SBATCH --job-name=non-packed-dataset
 #SBATCH --output=inference.out
 #SBATCH --mail-user=tathagato.roy@research.iiit.ac.in
 #SBATCH --mail-type=BEGIN
@@ -13,7 +13,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
-#SBATCH -w gnode090
+#SBATCH -w gnode049
 
 
 
@@ -21,7 +21,13 @@
 echo "Activating Conda Environment Virtual Environment"
 source /home2/tathagato/miniconda3/bin/activate roy
 echo "running script"
-./run_inference.sh
+#./run_training.sh
+cd /home2/tathagato/summarization/MACSum/experiments/scripts/
+python parallel_inference.py
+cd /home2/tathagato/summarization/MACSum/experiments
+python eval.py > experiment_output.txt
+#python parallel_inference.py
+#./run_training.sh
 # accelerate launch test_finetune_phi.py --attribute length
 # accelerate launch test_finetune_phi.py --attribute extractiveness
 # accelerate launch test_finetune_phi.py --attribute topic

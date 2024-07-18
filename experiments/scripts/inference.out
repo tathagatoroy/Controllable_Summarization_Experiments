@@ -1,8 +1,7 @@
+==========================================
+SLURM_JOB_ID = 1172971
+SLURM_NODELIST = gnode049
+SLURM_JOB_GPUS = 0,1,2,3
+==========================================
 Activating Conda Environment Virtual Environment
 running script
-starting  gpu 1 in the background
-starting  gpu 2 in the background
-starting gpu in the background
-starting  gpu 4 in the background
-all done
-Completed

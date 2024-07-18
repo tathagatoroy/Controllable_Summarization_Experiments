@@ -1,0 +1,19 @@
+[
+    ["/scratch/tathagato/redo_adapter_experiments/extractiveness/checkpoint-1", "extractiveness"],
+    ["/scratch/tathagato/redo_adapter_experiments/extractiveness/checkpoint-500", "extractiveness"],
+    ["/scratch/tathagato/redo_adapter_experiments/extractiveness/checkpoint-1000", "extractiveness"],
+    ["/scratch/tathagato/redo_adapter_experiments/extractiveness/checkpoint-1500", "extractiveness"],
+    ["/scratch/tathagato/redo_adapter_experiments/extractiveness/extractiveness", "extractiveness"],
+
+    ["/scratch/tathagato/redo_adapter_experiments/length/checkpoint-1", "length"],
+    ["/scratch/tathagato/redo_adapter_experiments/length/checkpoint-500", "length"],
+    ["/scratch/tathagato/redo_adapter_experiments/length/checkpoint-1000", "length"],
+    ["/scratch/tathagato/redo_adapter_experiments/length/checkpoint-1500", "length"],
+    ["/scratch/tathagato/redo_adapter_experiments/length/length", "length"]
+
+    ["/scratch/tathagato/redo_adapter_experiments/length/checkpoint-1", "topic"],
+    ["/scratch/tathagato/redo_adapter_experiments/length/checkpoint-500", "topic"]
+
+
+
+]

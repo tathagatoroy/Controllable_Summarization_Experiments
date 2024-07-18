@@ -9,5 +9,7 @@ accelerate config pathn : /home2/tathagato/.cache/huggingface/accelerate/default
 https://github.com/huggingface/blog/blob/main/accelerate-large-models.md
 
 
-
-
+#doc 
+modified 
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/trl/trainer/sft_trainer.py
+line 474

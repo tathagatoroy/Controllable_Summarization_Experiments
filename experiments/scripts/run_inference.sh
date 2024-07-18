@@ -24,4 +24,6 @@ pid_4=$!
 #wait for all pid
 wait $pid_1 $pid_2 $pid_3 $pid_4
 # wait $pid_1 $pid_2 
+
+
 echo "all done"

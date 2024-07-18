@@ -16,7 +16,10 @@ from utils import load_dataset_from_path_phi, load_multi_attribute_dataset_from_
 from transformers import pipeline
 from peft import PeftModelForCausalLM, get_peft_config, PeftConfig
 import json
-from eval import output_metrics
+import time
+from transformers.pipelines.pt_utils import KeyDataset
+
+#from eval import output_metrics
 
 # torch.backends.cuda.enable_mem_efficient_sdp(False)
 # torch.backends.cuda.enable_flash_sdp(False)
@@ -29,11 +32,11 @@ def apply_inference_chat_template(
     messages = example["messages"]
     if messages[0]["role"] != "system":
         messages.insert(0, {"role": "system",
-                            "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                            "content": "You are a friendly chatbot who always help the user"
                                 })
-    #make assistant part empty
-    messages[-1]["content"] = ""
-    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, tokenize=False)
+    #remove the assistant part for the inference type
+    messages = messages[:-1]
+    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=False)
     return example
 def apply_chat_template(
     example,
@@ -43,7 +46,7 @@ def apply_chat_template(
     # Add an empty system message if there is none
     if messages[0]["role"] != "system":
         messages.insert(0, {"role": "system",
-                            "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                            "content": "You are a friendly chatbot who always help the user"
                                 })
     example["text"] = tokenizer.apply_chat_template(
         messages, tokenize=False)
@@ -135,22 +138,24 @@ if __name__ == "__main__":
 
 
 
-
+    model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     if args.use_checkpoint:
         print("loading from " + args.checkpoint_path)
-        tokenizer_path = os.path.dirname(args.model_directory)
-        model = AutoModelForCausalLM.from_pretrained(args.checkpoint_path,
+        model = AutoModelForCausalLM.from_pretrained(model_name,
                                             trust_remote_code = True, 
                                             quantization_config = nf4_config, 
                                             torch_dtype = torch.float16,
                                             device_map = "cuda:0")
 
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code = True)
-        config = PeftConfig.from_pretrained(args.model_directory)
-        model = PeftModelForCausalLM.from_pretrained(model, args.model_directory, args.first_adapter_name, is_trainable = True)
+        tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code = True)
+        config = PeftConfig.from_pretrained(args.checkpoint_path)
+        model = PeftModelForCausalLM.from_pretrained(model, args.checkpoint_path, args.attribute, is_trainable = True)
+        # print(model)
+        # import code
+        # code.interact(local=locals())
         print(list(model.peft_config.keys()))
-        model = model.merge_and_unload()
-        tokenizer.padding_side = 'left'
+        #model = model.merge_and_unload()
+        tokenizer.padding_side = 'right'
     elif args.use_merged_model_checkpoint:
         print("loading from " + args.merged_model_directory)
         merged_model_checkpoint_path = os.path.join(args.merged_model_directory, "final_merged_model")
@@ -162,7 +167,7 @@ if __name__ == "__main__":
 
         tokenizer = AutoTokenizer.from_pretrained(args.merged_model_directory, trust_remote_code = True)
         #config = PeftConfig.from_pretrained(args.merged_model_directory)
-        tokenizer.padding_side = 'left'
+        tokenizer.padding_side = 'right'
     elif args.use_2_checkpoint:
         print("two checkpoint loading")
         print("adapter_1_path : {0}".format(args.first_checkpoint_path))
@@ -180,21 +185,21 @@ if __name__ == "__main__":
         print(list(model.peft_config.keys()))
 
         model = model.merge_and_unload()
-        tokenizer.padding_side = 'left'
+        tokenizer.padding_side = 'right'
 
 
     else:
         model = AutoModelForCausalLM.from_pretrained(args.checkpoint_path, quantization_config = nf4_config, torch_dtype = torch.float16, device_map = "cuda:0")
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name, cache_dir = args.cache_dir)
-        tokenizer.padding_side = 'left'
+        tokenizer.padding_side = 'right'
 
 
     print("attribute for the dataset is : {0}".format(args.attribute))
     test_dataset = load_dataset_from_path_phi(args.val_dataset_path, args.attribute)
     if args.test_dataset_size == -1:
         args.test_dataset_size = len(test_dataset)
-
-    # test_dataset = test_dataset.select(range(10))
+    print("test dataset size", len(test_dataset))
+    #test_dataset = test_dataset.select(range(16))
 
 
     print("test dataset size", len(test_dataset))
@@ -209,61 +214,78 @@ if __name__ == "__main__":
         remove_columns=column_names,
         desc="Applying chat template to test_sft",
     )
+    
     print("tokenizer padding side", tokenizer.padding_side)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model.eval()
- 
-
-    #running inference using pipeline
-    pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, batch_size = 4)
-
-
+    
     # # Initialize variables
     prompts = []
     batch_size = 4 # Adjust the batch size as needed
     max_sequence_length = 2048  # Set this to your model's maximum sequence length
-    dist = {}
+    max_new_tokens = 150
     all_outputs = []
     total_input_size = 0
     inference_output = {}
     cur_index = 0
     index_matches = []
-    for index, example in tqdm.tqdm(enumerate(processed_test_dataset)):
-        messages = example["messages"]
-        messages[-1]["content"] = ""
-        prompt = pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    #remove all instances where len(prompt) > 2048 in the test dataset
+    processed_test_dataset = processed_test_dataset.filter(lambda x: len(tokenizer(x["messages_for_inference"], return_tensors="pt")["input_ids"]) <= max_sequence_length - max_new_tokens - 10)
+    print("after filtering the dataset size is : {0}".format(len(processed_test_dataset)))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.eval()
+    
+    pipe = pipeline("text-generation",model = model, tokenizer = tokenizer, batch_size = batch_size)
+    for i, out in tqdm.auto.tqdm(enumerate(pipe(KeyDataset(processed_test_dataset, "messages_for_inference"),
+                             max_new_tokens=max_new_tokens, do_sample=True, temperature=1, top_k=50, top_p=0.95))):
+        original_data = processed_test_dataset[i]
+        original_data["generated_text"] = out[0]['generated_text']
+        original_data["generated_summary"] = out[0]['generated_text'].split("\n")[-1]
+        inference_output[i] = original_data
         
-        # Check if the tokenized prompt length exceeds the maximum sequence length
-        tokenized_prompt = pipe.tokenizer(prompt, return_tensors="pt")["input_ids"]
-        prompt_length = tokenized_prompt.size(1)
-        if prompt_length not in dist:
-            dist[prompt_length] = 0
-        dist[prompt_length] += 1
-        #print(f"Example {index} has length {prompt_length}")
-        if tokenized_prompt.size(1) > max_sequence_length:
-            #print(f"Skipping example {index} due to length {tokenized_prompt.size(1)} > {max_sequence_length}")
-            total_input_size += 1
-            continue  # Skip this example if it exceeds the maximum sequence length
+ 
 
-        prompts.append(prompt)
-        index_matches.append(cur_index)
-        inference_output[cur_index] = {key : example[key] for key in example.keys()}
-        inference_output[cur_index]['prompt_for_inference'] = prompt
-        cur_index += 1
+    #running inference using pipeline
+    # pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, batch_size = 4)
 
 
-        # Check if we have reached the batch size
-        if len(prompts) == batch_size:
-            # Process the batch
-            outputs = pipe(prompts, max_new_tokens=256, do_sample=True, temperature=0.7, top_k=50, top_p=0.95)
-            size = len(outputs)
-            for i in range(size):
-                inference_output[index_matches[i]]['generated_text'] = outputs[i][0]['generated_text']
+    # for index, example in tqdm.tqdm(enumerate(processed_test_dataset)):
+    #     #messages = example["messages"]
+    #     #messages[-1]["content"] = ""
+    #     #print(pipe.tokenizer.apply_chat_template(example['messages_for_inference'], tokenize=False, add_generation_prompt=True))
+    #     #prompt = pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    #     # Check if the tokenized prompt length exceeds the maximum sequence length
+    #     prompt = example["messages_for_inference"]
+    #     tokenized_prompt = pipe.tokenizer(prompt, return_tensors="pt")["input_ids"]
+    #     prompt_length = tokenized_prompt.size(1)
+    #     if tokenized_prompt.size(1) > max_sequence_length - max_new_tokens:
+    #         print(f"Skipping example {index} due to length {tokenized_prompt.size(1)} > {max_sequence_length - max_new_tokens}")
+    #         total_input_size += 1
+    #         continue  # Skip this example if it exceeds the maximum sequence length
+
+    #     prompts.append(prompt)
+    #     index_matches.append(cur_index)
+    #     inference_output[cur_index] = {key : example[key] for key in example.keys()}
+    #     inference_output[cur_index]['prompt_for_inference'] = prompt
+    #     cur_index += 1
 
 
-            # Reset the prompts list for the next batch
-            index_matches = []
-            prompts = []
+    #     # Check if we have reached the batch size
+    #     # for prompt in prompts:
+    #     #     print(prompt)
+    #     #     print("-------------------")
+    #     if len(prompts) == batch_size:
+    #         # Process the batch
+    #         start_time = time.time()
+    #         outputs = pipe(prompts, max_new_tokens=max_new_tokens, do_sample=True, temperature=1, top_k=50, top_p=0.95)
+    #         size = len(outputs)
+    #         for i in range(size):
+    #             inference_output[index_matches[i]]['generated_text'] = outputs[i][0]['generated_text']
+    #             inference_output[index_matches[i]]['generated_summary'] = outputs[i][0]['generated_text'].split("\n")[-1]
+
+    #         end_time = time.time()
+    #         print("Time taken for batch: ", end_time - start_time)
+    #         # Reset the prompts list for the next batch
+    #         index_matches = []
+    #         prompts = []
 
     #dump the output 
     # if args.use_checkpoint:
@@ -278,6 +300,14 @@ if __name__ == "__main__":
     #         json.dump(inference_output, f)
 
     # print("The size of the dataset is: ", len(processed_test_dataset))
+    for example in inference_output.values():
+        print("generated summary")
+        print(example['generated_summary'])
+        print("\n")
+        print("message_for_inference")
+        print(example['messages_for_inference'])
+        print("------------------------------------------------------")
+        #print if message_for_inference is equal to prompt_for_inference
 
     print("The size of the dataset is: ", len(processed_test_dataset))
     print("Saving the output file to {0}".format(args.output_file))
@@ -287,7 +317,7 @@ if __name__ == "__main__":
     print("Saved the model output to {0}".format(args.output_file))
 
     #output 
-    output_metrics(args.output_file, args.attribute)
+    #output_metrics(args.output_file, args.attribute)
 
 
 

@@ -89,7 +89,6 @@ class InferenceCallback(TrainerCallback):
         print(f'Saved inference results to {output_file} at step {state.global_step}')
         
         return control
-
 def apply_inference_chat_template(
         example, 
         tokenizer,
@@ -100,14 +99,9 @@ def apply_inference_chat_template(
         messages.insert(0, {"role": "system",
                             "content": "You are a friendly chatbot who always help the user"
                                 })
-    #make assistant part empty
-    messages[-1]["content"] = ""
-    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, tokenize=False)
-    tokenized_example = tokenizer(example["messages_for_inference"], padding="max_length", truncation=True, max_length=2048)
-    for key in tokenized_example.keys():
-        example[key] = tokenized_example[key]
-    
-    
+    #remove the assistant part for the inference type
+    messages = messages[:-1]
+    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=False)
     return example
 def apply_chat_template(
     example,

@@ -21,7 +21,18 @@ import os
 from utils import load_dataset_from_path_phi, load_multi_attribute_dataset_from_path,print_trainable_parameters, count_model_parameters
 from transformers import pipeline
 import json
+import time
+###################################################################################################################################################################
+#----------------------------------------------------------------TODOS----------------------------------------------------------------------------------------------#
+''' 
+1.check there still exist some discrepancy between train and test prompt. That is there should </s> after each role prompt but <s> only in the beginning of the prompt 
+that is currently not the case 
+2. check in generate if model is giving the same output without using the 2 cascading layers. It should be same as base model
+3. check which layers weight change if called loss.backward 
 
+'''
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------#
+###################################################################################################################################################################
 #config 
 rank_1 = 64
 rank_2 = 32
@@ -29,6 +40,10 @@ alpha_1 = 16
 alpha_2 = 16
 adapter_name = "default"
 dropout = 0.1
+is_second_layar_being_trained = False
+is_first_layer_being_trained = False
+is_first_layer_being_used_for_inference = False
+is_second_layer_being_used_for_inference = False
 
 target_modules = [
                     'q_proj',
@@ -39,7 +54,63 @@ target_modules = [
                     'up_proj',
                     'down_proj'
 ]
+cache_dir = "/scratch/murali"
+#generation config 
+max_new_tokens = 150
+top_k = 50
+top_p = 0.95
+temperature = 1
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+#dataset config 
+attribute = "length"
+train_dataset_path = "../dataset/macdoc/train_dataset.json"
+test_dataset_path = "../dataset/macdoc/test_dataset.json"
+test_dataset_size = 10 #-1 for all
+train_dataset_size = 10 #-1 means for all
+
+#model config 
+max_seq_length = 2048
+max_sequence_length = 2048
+
+
+
+
+def generate(model, tokenizer, prompt , max_new_tokens = max_new_tokens, top_k = top_k, top_p = top_p, temperature = temperature, device = device):
+    model.eval()
+    num_return_sequences = 1
+    max_length = max_new_tokens
+    tokens = tokenizer.encode(prompt)
+    tokens = torch.tensor(tokens, dtype=torch.long)
+    mum_tokens_intially = tokens.size(0)
+    tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
+    xgen = tokens.to(device)
+    sample_rng = torch.Generator(device=device)
+    sample_rng.manual_seed(42)
+    while xgen.size(1) - num_tokens_initially < max_length:
+        # forward the model to get the logits
+        with torch.no_grad():
+            with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
+                logits, loss = model(xgen) # (B, T, vocab_size)
+            # take the logits at the last position
+            logits = logits[:, -1, :] # (B, vocab_size)
+            # get the probabilities
+            probs = F.softmax(logits, dim=-1)
+            # do top-k sampling of 50 (huggingface pipeline default)
+            # topk_probs here becomes (5, 50), topk_indices is (5, 50)
+            topk_probs, topk_indices = torch.topk(probs, 50, dim=-1)
+            # select a token from the top-k probabilities
+            # note: multinomial does not demand the input to sum to 1
+            ix = torch.multinomial(topk_probs, 1, generator=sample_rng) # (B, 1)
+            # gather the corresponding indices
+            xcol = torch.gather(topk_indices, -1, ix) # (B, 1)
+            # append to the sequence
+            xgen = torch.cat((xgen, xcol), dim=1)
+    # print the generated text
+    for i in range(num_return_sequences):
+        tokens = xgen[i, :max_length].tolist()
+        decoded = enc.decode(tokens)
+        print(f"rank {ddp_rank} sample {i}: {decoded}")
 #run command accelerate launch cascaded_lora.py
 class CascadedLoRALinear4bit(torch.nn.Module):
     def __init__(self, linear, in_dim, out_dim, rank_1 = rank_1, rank_2 = rank_2, alpha_1 = alpha_1, alpha_2 = alpha_2, adapter_name = "default" , dropout = dropout):
@@ -95,10 +166,10 @@ class CascadedLoRALinear4bit(torch.nn.Module):
         self.alpha_2 = alpha_2
         self.rank_1 = rank_1
         self.rank_2 = rank_2
-        self.is_second_layar_being_trained = False
-        self.is_first_layer_being_trained = False
-        self.is_first_layer_being_used_for_inference = True
-        self.is_first_layer_being_used_for_inference = True
+        self.is_second_layar_being_trained = is_second_layar_being_trained
+        self.is_first_layer_being_trained = is_first_layer_being_trained
+        self.is_first_layer_being_used_for_inference = is_first_layer_being_used_for_inference
+        self.is_second_layer_being_used_for_inference = is_second_layer_being_used_for_inference
         self.scaling_1 = self.rank_1 / self.alpha_1
         self.scaling_2 = self.rank_2 / self.alpha_1
         self.adapter_name = adapter_name
@@ -147,12 +218,23 @@ class CascadedLoRALinear4bit(torch.nn.Module):
     def forward(self, x):
 
         self.set_gradients_for_all_layer()
+        output = None
         if self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
+            #print("first and second both")
             #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) + self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2 @ self.W2_b1 @ self.W2_b2)
-            output  = self.linear(x) + self.scaling_1 * (self.W1['A'](self.W1['B'](x))) + self.scaling_2 * (self.W2['B2'](self.W2['A2'](self.W2['B1'](self.W2['A1'](x)))))
-        if self.is_first_layer_being_used_for_inference and not self.is_second_layer_being_used_for_inference:
+            output  = self.base_layer(x) + self.scaling_1 * (self.W1['A'](self.W1['B'](x))) + self.scaling_2 * (self.W2['B2'](self.W2['A2'](self.W2['B1'](self.W2['A1'](x)))))
+        elif self.is_first_layer_being_used_for_inference and not self.is_second_layer_being_used_for_inference:
             #x = self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2) 
-            output  =  self.linear(x)  + self.scaling_1 * (self.W1['A'](self.W1['B'](x))) 
+            #print("first only")
+            output  =  self.base_layer(x)  + self.scaling_1 * (self.W1['A'](self.W1['B'](x))) 
+
+        elif not self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
+            #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) 
+            #print("second only")
+            output  = self.base_layer(x) + self.scaling_2 * (self.W2['B2'](self.W2['A2'](self.W2['B1'](self.W2['A1'](x)))))
+        else:
+            #print("none")
+            output = self.base_layer(x)
         return output
     
 def replace_with_cascaded_lora(module, target_modules = target_modules, rank_1 = 64, rank_2 = 32, alpha_1 = 16 , alpha_2 = 16 , adapter_name = "default" , dropout = None):
@@ -243,11 +325,11 @@ def apply_inference_chat_template(
     messages = example["messages"]
     if messages[0]["role"] != "system":
         messages.insert(0, {"role": "system",
-                            "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                            "content": "You are a friendly chatbot who always help the user"
                                 })
-    #make assistant part empty
-    messages[-1]["content"] = ""
-    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, tokenize=False)
+    #remove the assistant part for the inference type
+    messages = messages[:-1]
+    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=False)
     return example
 def apply_chat_template(
     example,
@@ -257,10 +339,22 @@ def apply_chat_template(
     # Add an empty system message if there is none
     if messages[0]["role"] != "system":
         messages.insert(0, {"role": "system",
-                            "content": "You are a friendly chatbot who always responds in the style of a pirate"
+                            "content": "You are a friendly chatbot who always help the user"
                                 })
-    example["text"] = tokenizer.apply_chat_template(
+    text = tokenizer.apply_chat_template(
         messages, tokenize=False)
+    #you can give pretokenized dataset to sfft also
+    tokenized_example = tokenizer(text, padding="max_length", truncation=True, max_length=2048)
+    # for key in tokenized_example.keys():
+    #     example[key] = tokenized_example[key]
+    example = {}
+    example['text'] = text
+    example["input_ids"] = tokenized_example["input_ids"]
+    example["attention_mask"] = tokenized_example["attention_mask"]
+    example['labels'] = tokenized_example["input_ids"]
+    
+    
+    
     return example
 def compare_state_dicts(initial_dict, final_dict):
     modified_layers = []
@@ -311,53 +405,150 @@ if __name__ == "__main__":
         trust_remote_code=True,
         torch_dtype=torch.bfloat16,
         device_map='cuda:0',
-        cache_dir = "/scratch/tathagato",
+        cache_dir = cache_dir,
         attn_implementation = "eager",
         quantization_config = nf4_config, 
     )
     print("loading quantized model")
     base_model_path = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     model = AutoModelForCausalLM.from_pretrained(base_model_path, **model_kwargs)
-    tokenizer = AutoTokenizer.from_pretrained(base_model_path,cache_dir = "/scratch/tathagato")
+    tokenizer = AutoTokenizer.from_pretrained(base_model_path,cache_dir = cache_dir)
+    #tinyllama pad token id is same as eos token id which is bad for finetuning because
+    #either you can't ignore pad token loss as the model will not learnt to predict eos token
+    #else loss will be dominated by pad token loss
+    #so we set the pad token id to unk token id
+    tokenizer.pad_token = tokenizer.unk_token
+
 
     #cascaded lora model
     print("creating cascaded lora model")
     create_cascaded_lora_model_from_quantized_model(model)
     print("model created")
     tokenizer.padding_side = 'right'
-    attribute = "length"
-    train_dataset_path = "/home2/tathagato/summarization/MACSum/dataset/macdoc/train_dataset.json"
     train_dataset = load_dataset_from_path_phi(train_dataset_path, attribute)
-    train_dataset = train_dataset.select(range(100))
-    column_names = []
+    if train_dataset_size != -1:
+        train_dataset = train_dataset.select(range(train_dataset_size))
+    test_dataset = load_dataset_from_path_phi(test_dataset_path, attribute)
+    if test_dataset_size != -1:
+        test_dataset = test_dataset.select(range(test_dataset_size))
+        
+    print("train dataset size", len(train_dataset))
+    print("test dataset size", len(test_dataset))
+
+    #remove all the columns except the text column
+    train_column_names = train_dataset.column_names
+
 
     processed_train_dataset = train_dataset.map(
         apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
         num_proc=10,
-        remove_columns=column_names,
+        remove_columns=train_column_names,
         desc="Applying chat template to train_sft",
     )
+
+
+    test_column_names = []
+
+    processed_test_dataset = test_dataset.map(
+        apply_inference_chat_template,
+        fn_kwargs={"tokenizer": tokenizer},
+        num_proc=10,
+        remove_columns=test_column_names,
+        desc="Applying chat template to test_sft",
+    )
+    
+    
+    
+    #remove all instances where len(prompt) > 2048 in the test dataset
+    processed_test_dataset = processed_test_dataset.filter(lambda x: len(tokenizer(x["messages_for_inference"], return_tensors="pt")["input_ids"]) <= max_sequence_length - max_new_tokens - 10)
+    print("after filtering the dataset size is : {0}".format(len(processed_test_dataset)))
+
     
     #initial_state_dict = {k: v.clone() for k, v in model.state_dict().items()}
 
-    trainer = SFTTrainer(
-        model=model,
-        args=train_conf,
-        train_dataset=processed_train_dataset,
-        max_seq_length=2048,
-        dataset_text_field="text",
-        tokenizer=tokenizer,
-        #callbacks=[InferenceCallback(model, tokenizer, processed_test_dataset, inference_directory=args.inference_directory, args=args)],
-        packing=True
+#------------------------------------LOOK AT THE DATASET ------------------------------------------
 
-    )
-    trainer.train()
-    #final_state_dict = {k: v.clone() for k, v in model.state_dict().items()}
-    #modified_layers = compare_state_dicts(initial_state_dict, final_state_dict)
-    with open("modified_layers.txt", "w") as file:
-        for layer in modified_layers:
-            file.write(layer + "\n")
+    #look at train_inputs 
+    # print("train data ")
+    #train_example = processed_train_dataset[0]
+    # print(train_example.keys())
+    # print(len(train_example['input_ids']))
+    # print(len(train_example['attention_mask']))
+    # print(len(train_example['labels']))
+    # print(train_example['text'])
+    # print(tokenizer.decode(train_example['input_ids'], skip_special_tokens=True))
+    # print(tokenizer.decode(train_example['labels'], skip_special_tokens=False))
+    # #assert the input ids and labels 
+    # #this should be the case for causalLM
+    # # the right shift happens inside the model
+    # assert torch.equal(torch.tensor(train_example['input_ids']), torch.tensor(train_example['labels'])), "input ids and labels are not equal"
+    # print(train_example['input_ids'])
+    
+    
+    # print("-------------------------------------")
+    
+    # print("test_data")
+    # test_example = processed_test_dataset[0]
+    # print(test_example.keys())
+    # print(test_example['messages_for_inference'])
+    
+#----------------------------------------------------------------------------------------------#
+#-----------------------CHECK FORWARD_PASS AND GENERATION------------------------------------#
+
+    #test if generate and forward works or not
+    #put the model to device first 
+    #dont do model.to("cuda") as this is set to 4bit and hence automatically goes to cuda
+    print(model.device)
+
+    train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
+    start_time = time.time()
+    with torch.no_grad():
+        output = model(train_input_ids, labels = train_input_ids)
+    end_time = time.time()
+    print("time taken for forward pass : ", end_time - start_time)
+    
+    
+    #import code; code.interact(local = locals())
+
+    
+    print("forward pass output loss: ")
+    #print(output)
+    #print(output.logits.shape)
+    #---notes---
+    #forward pass output is CAUSALLMOUTPUTWITHPAST object which .loss = {logits : tensor} if not labels are provided
+    #if labels are provided then loss = tensor
+    #it also output.logits which is the logits of the model
+    #FORWARD PASS IS WORKING
+    print(output.loss)
+    
+    
+    
+    #check if generate works
+    model.eval()
+    start_time = time.time()
+    #test_input_prompt = processed_test_dataset[0]['messages_for_inference']
+    test_input_prompt = "<|user|>hello how are you doing ?\n<|assistant|>\n"
+    tokenized_test_input_prompt = tokenizer(test_input_prompt, return_tensors="pt").to("cuda")
+    print(len(tokenized_test_input_prompt['input_ids'][0]))
+    print(tokenizer.decode(tokenized_test_input_prompt['input_ids'][0]))
+    generation_output = model.generate(**tokenized_test_input_prompt, max_new_tokens = max_new_tokens, do_sample = True, top_k = top_k, top_p = top_p, temperature = temperature, return_dict_in_generate=True, output_scores=True)
+    #print("generation output : ", generation_output)
+    print(generation_output.sequences)
+    print(tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True))
+    end_time = time.time()
+    print("time taken for generation : ", end_time - start_time)
+    print("time taken for generation per token : ", (end_time - start_time) / len(generation_output.sequences[0]))
+    print("size of the generated sequence : ", len(generation_output.sequences[0]))
+    print("probabilities of eos token across the sequence : ", generation_output.scores[0][:,tokenizer.eos_token_id])
+    
+    
+
+#----------------------------------GENERATION AND FORWARD PASS SEEMS TO BE WORKING-----------------------------------#
+    
+    
+
+
     
 
 

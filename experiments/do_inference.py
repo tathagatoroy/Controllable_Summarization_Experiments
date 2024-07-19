@@ -48,9 +48,16 @@ def apply_chat_template(
         messages.insert(0, {"role": "system",
                             "content": "You are a friendly chatbot who always help the user"
                                 })
-    example["text"] = tokenizer.apply_chat_template(
+    text = tokenizer.apply_chat_template(
         messages, tokenize=False)
-    return example
+    #you can give pretokenized dataset to sfft also
+    tokenized_example = tokenizer(text, padding="max_length", truncation=True, max_length=2048)
+    # for key in tokenized_example.keys():
+    #     example[key] = tokenized_example[key]
+    example = {}
+    example["input_ids"] = tokenized_example["input_ids"]
+    example["attention_mask"] = tokenized_example["attention_mask"]
+    example['labels'] = tokenized_example["input_ids"]
 if __name__ == "__main__":
         #parse the arguments
     parser = argparse.ArgumentParser()

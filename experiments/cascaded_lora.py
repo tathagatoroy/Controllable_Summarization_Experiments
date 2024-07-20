@@ -5,7 +5,7 @@ from bitsandbytes.nn import Linear4bit
 import datasets
 from trl import SFTTrainer
 from typing import List, Dict, Any, Tuple
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig, set_seed
 import safetensors
 import torch.nn as nn
 from functools import partial
@@ -22,12 +22,14 @@ from utils import load_dataset_from_path_phi, load_multi_attribute_dataset_from_
 from transformers import pipeline
 import json
 import time
+import numpy as np
+import random
 ###################################################################################################################################################################
 #----------------------------------------------------------------TODOS----------------------------------------------------------------------------------------------#
 ''' 
 1.check there still exist some discrepancy between train and test prompt. That is there should </s> after each role prompt but <s> only in the beginning of the prompt 
-that is currently not the case 
-2. check in generate if model is giving the same output without using the 2 cascading layers. It should be same as base model
+that is currently not the case ---> this looks fine I think. FIXED
+2. check in generate if model is giving the same output without using the 2 cascading layers. It should be same as base model. ---> IT APPEARS TO BE SAME.
 3. check which layers weight change if called loss.backward 
 
 '''
@@ -73,45 +75,61 @@ train_dataset_size = 10 #-1 means for all
 max_seq_length = 2048
 max_sequence_length = 2048
 
+#training config
+learning_rate = 3e-4
+num_train_epochs = 1
+batch_size_per_device = 1
+num_device = 4
+gradient_accumulation_steps = 2
 
 
 
-def generate(model, tokenizer, prompt , max_new_tokens = max_new_tokens, top_k = top_k, top_p = top_p, temperature = temperature, device = device):
-    model.eval()
-    num_return_sequences = 1
-    max_length = max_new_tokens
-    tokens = tokenizer.encode(prompt)
-    tokens = torch.tensor(tokens, dtype=torch.long)
-    mum_tokens_intially = tokens.size(0)
-    tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
-    xgen = tokens.to(device)
-    sample_rng = torch.Generator(device=device)
-    sample_rng.manual_seed(42)
-    while xgen.size(1) - num_tokens_initially < max_length:
-        # forward the model to get the logits
-        with torch.no_grad():
-            with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
-                logits, loss = model(xgen) # (B, T, vocab_size)
-            # take the logits at the last position
-            logits = logits[:, -1, :] # (B, vocab_size)
-            # get the probabilities
-            probs = F.softmax(logits, dim=-1)
-            # do top-k sampling of 50 (huggingface pipeline default)
-            # topk_probs here becomes (5, 50), topk_indices is (5, 50)
-            topk_probs, topk_indices = torch.topk(probs, 50, dim=-1)
-            # select a token from the top-k probabilities
-            # note: multinomial does not demand the input to sum to 1
-            ix = torch.multinomial(topk_probs, 1, generator=sample_rng) # (B, 1)
-            # gather the corresponding indices
-            xcol = torch.gather(topk_indices, -1, ix) # (B, 1)
-            # append to the sequence
-            xgen = torch.cat((xgen, xcol), dim=1)
-    # print the generated text
-    for i in range(num_return_sequences):
-        tokens = xgen[i, :max_length].tolist()
-        decoded = enc.decode(tokens)
-        print(f"rank {ddp_rank} sample {i}: {decoded}")
+
+#taken from karpathy. Not needed for now as generate works
+# def generate(model, tokenizer, prompt , max_new_tokens = max_new_tokens, top_k = top_k, top_p = top_p, temperature = temperature, device = device):
+#     model.eval()
+#     num_return_sequences = 1
+#     max_length = max_new_tokens
+#     tokens = tokenizer.encode(prompt)
+#     tokens = torch.tensor(tokens, dtype=torch.long)
+#     mum_tokens_intially = tokens.size(0)
+#     tokens = tokens.unsqueeze(0).repeat(num_return_sequences, 1)
+#     xgen = tokens.to(device)
+#     sample_rng = torch.Generator(device=device)
+#     sample_rng.manual_seed(42)
+#     while xgen.size(1) - num_tokens_initially < max_length:
+#         # forward the model to get the logits
+#         with torch.no_grad():
+#             with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
+#                 logits, loss = model(xgen) # (B, T, vocab_size)
+#             # take the logits at the last position
+#             logits = logits[:, -1, :] # (B, vocab_size)
+#             # get the probabilities
+#             probs = F.softmax(logits, dim=-1)
+#             # do top-k sampling of 50 (huggingface pipeline default)
+#             # topk_probs here becomes (5, 50), topk_indices is (5, 50)
+#             topk_probs, topk_indices = torch.topk(probs, 50, dim=-1)
+#             # select a token from the top-k probabilities
+#             # note: multinomial does not demand the input to sum to 1
+#             ix = torch.multinomial(topk_probs, 1, generator=sample_rng) # (B, 1)
+#             # gather the corresponding indices
+#             xcol = torch.gather(topk_indices, -1, ix) # (B, 1)
+#             # append to the sequence
+#             xgen = torch.cat((xgen, xcol), dim=1)
+#     # print the generated text
+#     for i in range(num_return_sequences):
+#         tokens = xgen[i, :max_length].tolist()
+#         decoded = enc.decode(tokens)
+#         print(f"rank {ddp_rank} sample {i}: {decoded}")
 #run command accelerate launch cascaded_lora.py
+
+
+
+
+
+
+
+
 class CascadedLoRALinear4bit(torch.nn.Module):
     def __init__(self, linear, in_dim, out_dim, rank_1 = rank_1, rank_2 = rank_2, alpha_1 = alpha_1, alpha_2 = alpha_2, adapter_name = "default" , dropout = dropout):
         super().__init__()
@@ -214,7 +232,7 @@ class CascadedLoRALinear4bit(torch.nn.Module):
     
     def freeze_the_second_adapter(self):
         self.is_second_layar_being_trained = False
-
+    
     def forward(self, x):
 
         self.set_gradients_for_all_layer()
@@ -222,7 +240,7 @@ class CascadedLoRALinear4bit(torch.nn.Module):
         if self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
             #print("first and second both")
             #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) + self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2 @ self.W2_b1 @ self.W2_b2)
-            output  = self.base_layer(x) + self.scaling_1 * (self.W1['A'](self.W1['B'](x))) + self.scaling_2 * (self.W2['B2'](self.W2['A2'](self.W2['B1'](self.W2['A1'](x)))))
+            output  = self.base_layer(x) + self.scaling_1 * (self.lora_A[self.adapter_name]) + self.scaling_2 * (self.W2['B2'](self.W2['A2'](self.W2['B1'](self.W2['A1'](x)))))
         elif self.is_first_layer_being_used_for_inference and not self.is_second_layer_being_used_for_inference:
             #x = self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2) 
             #print("first only")
@@ -363,7 +381,23 @@ def compare_state_dicts(initial_dict, final_dict):
             modified_layers.append(layer_name)
     return modified_layers
 
+# Function to set all seeds for reproducibility
+def set_all_seeds(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    set_seed(seed)
+    # Ensure deterministic behavior by setting environment variables
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 if __name__ == "__main__":
+    #set seed
+    set_all_seeds(42)
+
+    
     output_directory = "test_cascaded_lora"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
@@ -422,7 +456,7 @@ if __name__ == "__main__":
 
     #cascaded lora model
     print("creating cascaded lora model")
-    create_cascaded_lora_model_from_quantized_model(model)
+    #create_cascaded_lora_model_from_quantized_model(model)
     print("model created")
     tokenizer.padding_side = 'right'
     train_dataset = load_dataset_from_path_phi(train_dataset_path, attribute)
@@ -471,27 +505,30 @@ if __name__ == "__main__":
 
     #look at train_inputs 
     # print("train data ")
-    #train_example = processed_train_dataset[0]
-    # print(train_example.keys())
-    # print(len(train_example['input_ids']))
-    # print(len(train_example['attention_mask']))
-    # print(len(train_example['labels']))
+    # train_example = processed_train_dataset[0]
     # print(train_example['text'])
+    # # print(train_example.keys())
+    # print(len(train_example['input_ids']))
+    # # print(len(train_example['attention_mask']))
+    # # print(len(train_example['labels']))
+    # # print(train_example['text'])
     # print(tokenizer.decode(train_example['input_ids'], skip_special_tokens=True))
     # print(tokenizer.decode(train_example['labels'], skip_special_tokens=False))
-    # #assert the input ids and labels 
-    # #this should be the case for causalLM
-    # # the right shift happens inside the model
-    # assert torch.equal(torch.tensor(train_example['input_ids']), torch.tensor(train_example['labels'])), "input ids and labels are not equal"
-    # print(train_example['input_ids'])
+    # # #assert the input ids and labels 
+    # # #this should be the case for causalLM
+    # # # the right shift happens inside the model
+    # # assert torch.equal(torch.tensor(train_example['input_ids']), torch.tensor(train_example['labels'])), "input ids and labels are not equal"
+    # # print(train_example['input_ids'])
     
     
     # print("-------------------------------------")
     
     # print("test_data")
     # test_example = processed_test_dataset[0]
-    # print(test_example.keys())
+    # # print(test_example.keys())
     # print(test_example['messages_for_inference'])
+    # print("-----------------------------------")
+    
     
 #----------------------------------------------------------------------------------------------#
 #-----------------------CHECK FORWARD_PASS AND GENERATION------------------------------------#
@@ -499,68 +536,117 @@ if __name__ == "__main__":
     #test if generate and forward works or not
     #put the model to device first 
     #dont do model.to("cuda") as this is set to 4bit and hence automatically goes to cuda
-    print(model.device)
+    # print(model.device)
 
-    train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
-    start_time = time.time()
-    with torch.no_grad():
-        output = model(train_input_ids, labels = train_input_ids)
-    end_time = time.time()
-    print("time taken for forward pass : ", end_time - start_time)
+    # train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
+    # start_time = time.time()
+    # with torch.no_grad():
+    #     output = model(train_input_ids, labels = train_input_ids)
+    # end_time = time.time()
+    # print("time taken for forward pass : ", end_time - start_time)
     
     
-    #import code; code.interact(local = locals())
+    # #import code; code.interact(local = locals())
 
     
-    print("forward pass output loss: ")
-    #print(output)
-    #print(output.logits.shape)
-    #---notes---
-    #forward pass output is CAUSALLMOUTPUTWITHPAST object which .loss = {logits : tensor} if not labels are provided
-    #if labels are provided then loss = tensor
-    #it also output.logits which is the logits of the model
-    #FORWARD PASS IS WORKING
-    print(output.loss)
+    # print("forward pass output loss: ")
+    # #print(output)
+    # #print(output.logits.shape)
+    # #---notes---
+    # #forward pass output is CAUSALLMOUTPUTWITHPAST object which .loss = {logits : tensor} if not labels are provided
+    # #if labels are provided then loss = tensor
+    # #it also output.logits which is the logits of the model
+    # #FORWARD PASS IS WORKING
+    # print(output.loss)
     
     
     
-    #check if generate works
-    model.eval()
-    start_time = time.time()
-    #test_input_prompt = processed_test_dataset[0]['messages_for_inference']
-    test_input_prompt = "<|user|>hello how are you doing ?\n<|assistant|>\n"
-    tokenized_test_input_prompt = tokenizer(test_input_prompt, return_tensors="pt").to("cuda")
-    print(len(tokenized_test_input_prompt['input_ids'][0]))
-    print(tokenizer.decode(tokenized_test_input_prompt['input_ids'][0]))
-    generation_output = model.generate(**tokenized_test_input_prompt, max_new_tokens = max_new_tokens, do_sample = True, top_k = top_k, top_p = top_p, temperature = temperature, return_dict_in_generate=True, output_scores=True)
-    #print("generation output : ", generation_output)
-    print(generation_output.sequences)
-    print(tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True))
-    end_time = time.time()
-    print("time taken for generation : ", end_time - start_time)
-    print("time taken for generation per token : ", (end_time - start_time) / len(generation_output.sequences[0]))
-    print("size of the generated sequence : ", len(generation_output.sequences[0]))
-    print("probabilities of eos token across the sequence : ", generation_output.scores[0][:,tokenizer.eos_token_id])
-    
+    # #check if generate works
+    # model.eval()
+    # start_time = time.time()
+    # #test_input_prompt = processed_test_dataset[0]['messages_for_inference']
+    # test_input_prompt = "<system> \n You are friendly chatbot</s> \n<|user|>\nhello how are you doing ?</s> \n<|assistant|>\n"
+    # tokenized_test_input_prompt = tokenizer(test_input_prompt, return_tensors="pt").to("cuda")
+    # print(tokenizer.decode(tokenized_test_input_prompt['input_ids'][0], skip_special_tokens = False))
+    # print("-------------------------input stuff ---------------------------------------")
+    # print(len(tokenized_test_input_prompt['input_ids'][0]))
+    # print(tokenizer.decode(tokenized_test_input_prompt['input_ids'][0]))
+    # generation_output = model.generate(**tokenized_test_input_prompt, max_new_tokens = max_new_tokens, do_sample = True, top_k = top_k, top_p = top_p, temperature = temperature, return_dict_in_generate=True, output_scores=True)
+    # print("-------------------\input stuff ---------------------------------------")
+    # print("-------------------output stuff ---------------------------------------")
+    # #print("generation output : ", generation_output)
+    # print(generation_output.sequences)
+    # print(tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True))
+    # end_time = time.time()
+    # print("time taken for generation : ", end_time - start_time)
+    # print("time taken for generation per token : ", (end_time - start_time) / len(generation_output.sequences[0]))
+    # print("size of the generated sequence : ", len(generation_output.sequences[0]))
+    # print(len(generation_output.scores))
+    # print(generation_output.scores[0].shape)
+    # print("probabilities of eos token across the sequence : ")
+    # for i in range(len(generation_output.scores)):
+    #     print(generation_output.scores[i][0,tokenizer.eos_token_id],end = " ")
     
 
 #----------------------------------GENERATION AND FORWARD PASS SEEMS TO BE WORKING-----------------------------------#
+#---------------------------------------------CHECK WHICH PARAMETERS BACKWARD IS UPDATING---------------------------------#
+    # model.train()
+    # train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
+    # labels = torch.tensor(processed_train_dataset[0]['labels']).unsqueeze(0).to("cuda")
     
+    # #save the initial state dict to a file
+    # torch.save(model.state_dict(), "initial_state_dict.pth")
+    
+    # #run the forward pass with torchbf16
+    # optimizer = torch.optim.AdamW(model.parameters(), lr = 3e-4)
+    # optimizer.zero_grad()
+    # # from https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html
+    # torch.set_float32_matmul_precision('high') # this is not the higest precision 32 : is seen as sum of 16 + 16
+    
+    # scaler = torch.cuda.amp.GradScaler()
+    # for i in tqdm.tqdm(range(10)):
+    #     with torch.autocast(device_type = "cuda", dtype = torch.float16):
+    #         output = model(train_input_ids, labels = labels)
+    #         loss = output.loss
+    #     scaler.scale(loss).backward()
+    #     scaler.step(optimizer)
+    #     scaler.update()
+    #     optimizer.zero_grad()
+    # #save the final state dict to a file
+    # torch.save(model.state_dict(), "final_state_dict.pth")
+
+    # for epoch in range(0): # 0 epochs, this section is for illustration only
+    #     for input, target in zip(data, targets):
+    #         with torch.autocast(device_type=device, dtype=torch.float16):
+    #             output = net(input)
+    #             loss = loss_fn(output, target)
+
+    #         # Scales loss. Calls ``backward()`` on scaled loss to create scaled gradients.
+    #         scaler.scale(loss).backward()
+
+    #         # ``scaler.step()`` first unscales the gradients of the optimizer's assigned parameters.
+    #         # If these gradients do not contain ``inf``s or ``NaN``s, optimizer.step() is then called,
+    #         # otherwise, optimizer.step() is skipped.
+    #         scaler.step(opt)
+
+    #         # Updates the scale for next iteration.
+    #         scaler.update()
+
+    #         opt.zero_grad() # set_to_none=True here can modestly improve performance
+
+
+
+
     
 
 
-    
 
 
 
-
-
-
-
-
-    
-
-
-
-
-
+    # Assuming `model` is your neural network model
+    for name, param in model.named_parameters():
+        print(f"Name: {name}")
+        print(f"  DataType: {param.dtype}")
+        print(f"  Device: {param.device}")
+        print(f"  Requires Grad: {param.requires_grad}")
+        print()

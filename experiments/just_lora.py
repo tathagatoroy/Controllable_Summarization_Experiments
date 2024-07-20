@@ -79,8 +79,8 @@ L
 
 #TODO
 #all these config should be overwritable from the command line
-rank_1 = 32
-rank_2 =  16
+rank_1 = 64
+rank_2 =  32
 alpha_1 = 16
 alpha_2 = 16
 adapter_name = "default"
@@ -94,10 +94,8 @@ target_modules = [
                     #'up_proj',
                     #'down_proj'
 ]
-is_second_layar_being_trained = False
 is_first_layer_being_trained = True
 is_first_layer_being_used_for_inference = True
-is_second_layer_being_used_for_inference = False
 
 cache_dir = "/scratch/murali"
 output_directory = "test_cascaded_lora"
@@ -152,11 +150,10 @@ def print_trainable_parameters(model):
 
 #transform a linear layer to a cascaded lora layer
 class CascadedLoRALinear4bit(torch.nn.Module):
-    def __init__(self, linear, in_dim, out_dim, rank_1 = rank_1, rank_2 = rank_2, alpha_1 = alpha_1, alpha_2 = alpha_2, adapter_name = "default" , dropout = dropout):
+    def __init__(self, linear, in_dim, out_dim, rank_1 = rank_1, alpha_1 = alpha_1, adapter_name = "default" , dropout = dropout):
         super().__init__()
         self.base_layer = linear
         std_dev_1 = 1 / torch.sqrt(torch.tensor(rank_1).float())
-        std_dev_2 = 1 / torch.sqrt(torch.tensor(rank_2).float())
         if dropout is not None:
             self.lora_dropout = nn.ModuleDict(
                 {
@@ -176,117 +173,21 @@ class CascadedLoRALinear4bit(torch.nn.Module):
         )
         self.lora_A[adapter_name].weight = torch.nn.Parameter(torch.randn(rank_1, in_dim) * std_dev_1)
         self.lora_B[adapter_name].weight = torch.nn.Parameter(torch.zeros(out_dim, rank_1))  
-        # B is (rank_1, out_dim)  there B is given B1 and B2 such B1 is (rank_1, rank_2) and B2 is (rank_2, out_dim)
-        # A is (in_dim, rank_1) there A is given A1 and A2 such A1 is (in_dim, rank_2) and A2 is (rank_2, rank_1)
-        # final output is BA(X) = B2(B1(A2(A1(X))))
 
-        self.lora_A1 = nn.ModuleDict(
-            {
-                adapter_name : torch.nn.Linear(in_dim, rank_2, bias = False)
-            }
-        )
-        self.lora_A2 = nn.ModuleDict(
-            {
-                adapter_name : torch.nn.Linear(rank_2, rank_1, bias = False)
-            }
-        )
-        self.lora_B1 = nn.ModuleDict(
-            {
-                adapter_name : torch.nn.Linear(rank_1, rank_2, bias = False)
-            }
-        )
-        self.lora_B2 = nn.ModuleDict(
-            {
-                adapter_name : torch.nn.Linear(rank_2, out_dim, bias = False)
-            }
-        )
-        
-        self.lora_A1[adapter_name].weight = torch.nn.Parameter(torch.randn(rank_2, in_dim) * std_dev_2)
-        self.lora_A2[adapter_name].weight = torch.nn.Parameter(torch.zeros(rank_1, rank_2)) 
-        self.lora_B1[adapter_name].weight = torch.nn.Parameter(torch.zeros(rank_2, rank_1))
-        self.lora_B2[adapter_name].weight = torch.nn.Parameter(torch.zeros(out_dim, rank_2) * std_dev_2)  
         self.alpha_1 = alpha_1
-        self.alpha_2 = alpha_2
         self.rank_1 = rank_1
-        self.rank_2 = rank_2
         #all adapters being used for inference by default and none of them are being trained
-        self.is_second_layar_being_trained = is_second_layar_being_trained
         self.is_first_layer_being_trained = is_first_layer_being_trained
         self.is_first_layer_being_used_for_inference = is_first_layer_being_used_for_inference
-        self.is_second_layer_being_used_for_inference = is_second_layer_being_used_for_inference
         self.scaling_1 = self.rank_1 / self.alpha_1
-        self.scaling_2 = self.rank_2 / self.alpha_1
         self.adapter_name = adapter_name
-        
-        #initialize with only the  adapter being trained
-        # 1. freeze base model
-        # 2. freeze the second adapter
-        # 3. tune the first adapter
-    #     self.freeze_base_layer()
-    #     self.freeze_the_second_adapter()
-    #     self.tune_the_first_adapter()
-    #     self.set_gradients_for_all_layer()
 
 
-
-    # def freeze_base_layer(self):
-    #     for param in self.base_layer.parameters():
-    #         param.requires_grad = False
-
-    # def set_gradients_for_all_layer(self):
-    #     #print("setting gradients for all layers")
-    #     #print(self.is_second_layar_being_trained)
-    #     if self.is_second_layar_being_trained:
-    #         self.lora_A1[self.adapter_name].requires_grad = True
-    #         self.lora_A2[self.adapter_name].requires_grad = True
-    #         self.lora_B1[self.adapter_name].requires_grad = True
-    #         self.lora_B2[self.adapter_name].requires_grad = True
-
-
-    #     else:
-    #         self.lora_A1[self.adapter_name].requires_grad = False
-    #         self.lora_A2[self.adapter_name].requires_grad = False
-    #         self.lora_B1[self.adapter_name].requires_grad = False
-    #         self.lora_B2[self.adapter_name].requires_grad = False
-            
-    #     if self.is_first_layer_being_trained:
-    #         self.lora_A[self.adapter_name].requires_grad = True
-    #         self.lora_B[self.adapter_name].requires_grad = True
-    #     else:
-    #         self.lora_A[self.adapter_name].requires_grad = False
-    #         self.lora_B[self.adapter_name].requires_grad = False  
-    #     #print("setting gradients for all layers done")
-    #     #print(self.lora_A1[self.adapter_name].requires_grad, self.lora_A2[self.adapter_name].requires_grad, self.lora_B1[self.adapter_name].requires_grad, self.lora_B2[self.adapter_name].requires_grad)
-    
-    # def tune_the_first_adapter(self):
-    #     self.is_first_layer_being_trained = True
-    
-    # def freeze_the_first_adapter(self):
-    #     self.is_first_layer_being_trained = False
-    
-    # def tune_the_second_adapter(self):
-    #     self.is_second_layar_being_trained = True
-    
-    # def freeze_the_second_adapter(self):
-    #     self.is_second_layar_being_trained = False
     #https://github.com/huggingface/peft/blob/main/src/peft/tuners/lora/layer.py
     def forward(self, x):
-        
-
-        #self.set_gradients_for_all_layer()
-        if self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
-            #print("first and second both")
-            #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) + self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2 @ self.W2_b1 @ self.W2_b2)
-            x  = self.base_layer(x) + self.scaling_1 *  self.lora_B[self.adapter_name](self.lora_A[self.adapter_name](x)) + self.scaling_2 * self.lora_B2[self.adapter_name](self.lora_B1[self.adapter_name](self.lora_A2[self.adapter_name](self.lora_A1[self.adapter_name](x))))
-        elif self.is_first_layer_being_used_for_inference and not self.is_second_layer_being_used_for_inference:
-            #x = self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2) 
+        if self.is_first_layer_being_used_for_inference:
             #print("first only")
             x  =  self.base_layer(x)  + self.scaling_1 * self.lora_B[self.adapter_name](self.lora_A[self.adapter_name](x))
-
-        elif not self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
-            #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) 
-            #print("second only")
-            x  = self.base_layer(x) + self.scaling_2 * self.lora_B2[self.adapter_name](self.lora_B1[self.adapter_name](self.lora_A2[self.adapter_name](self.lora_A1[self.adapter_name](x))))
         else:
             #print("none")
             x = self.base_layer(x)
@@ -317,26 +218,11 @@ def configure_optimizers(model, weight_decay, learning_rate, device_type = "cuda
     optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
     return optimizer
 
-def set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = is_first_layer_being_trained, second_adapter_layer = is_second_layar_being_trained):
+def set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = is_first_layer_being_trained):
     #print(base_layer, first_adapter_layer, second_adapter_layer)
     for name, param in model.named_parameters() :
-        
-        #what is isinstance of module 
-        #print(name)
 
-        if "lora_A1" in name or "lora_A2" in name or "lora_B1" in name or "lora_B2" in name:
-            #print("is a second adapter layer")
-            if second_adapter_layer:
-                # for param in module.parameters():
-                #     param.requires_grad = True
-                param.requires_grad = True
-                #print("setting second adapter layer to trainable")
-            else:
-                # for param in module.parameters():
-                #     param.requires_grad = False
-                param.requires_grad = False
-                #print("setting second adapter layer to non trainable")
-        elif "lora_A" in name or "lora_B" in name :
+        if "lora_A" in name or "lora_B" in name :
             #print("is a first adapter layer")
 
             if first_adapter_layer:
@@ -357,22 +243,22 @@ def set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer =
             else:
                 param.requires_grad = False
                 #print("setting base layer to non trainable")
-            #print("\n")
+        #print("\n")
     return model
 
 
 
-def replace_with_cascaded_lora(module, target_modules = target_modules, rank_1 = 64, rank_2 = 32, alpha_1 = 16 , alpha_2 = 16 , adapter_name = "default" , dropout = None):
+def replace_with_cascaded_lora(module, target_modules = target_modules, rank_1 = 64, alpha_1 = 16, adapter_name = "default" , dropout = None):
     for name, child in module.named_children():
         if isinstance(child, bnb.nn.Linear4bit) and name in target_modules:
             #setattr(module, name, CascadedLoRALinear4bit(child, in_dim, out_dim, **kwargs))
             #print(name)
             #print(child.in_features, child.out_features)
             #get the device of the child
-            setattr(module, name, CascadedLoRALinear4bit(child, child.in_features, child.out_features, rank_1, rank_2, alpha_1, alpha_2, adapter_name , dropout = dropout))
+            setattr(module, name, CascadedLoRALinear4bit(child, child.in_features, child.out_features, rank_1, alpha_1, adapter_name , dropout = dropout))
             #put everything in device 
         else:
-            replace_with_cascaded_lora(child, target_modules, rank_1, rank_2, alpha_1, alpha_2, adapter_name , dropout = None)
+            replace_with_cascaded_lora(child, target_modules, rank_1, alpha_1, adapter_name , dropout = None)
 def print_device_and_dtype(model, file = sys.stdout):
     if file == sys.stdout:
             for name, param in model.named_parameters():
@@ -485,7 +371,7 @@ def create_cascaded_lora_model_from_quantized_model(quantized_model, target_modu
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 #print(quantized_model)
 
-    replace_with_cascaded_lora(quantized_model, target_modules = target_modules, rank_1 = rank_1, rank_2 = rank_2, alpha_1 = alpha_1, alpha_2 = alpha_2, adapter_name = adapter_name , dropout = dropout)
+    replace_with_cascaded_lora(quantized_model, target_modules = target_modules, rank_1 = rank_1, alpha_1 = alpha_1, adapter_name = adapter_name , dropout = dropout)
     move_to_device(quantized_model, torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
     #print_device_and_dtype(quantized_model, file = "cascaded_lora_structure.txt")
     
@@ -701,8 +587,7 @@ if __name__ == "__main__":
     #1 set gradient for all layer should be made as method for the model class itself
 #--------------------------------- CHECK WHETHER FREEZING IS WORKING OR NOT -------------------------------------#
     #only set the first adapter layer to be trainable
-    model = set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = True, second_adapter_layer = False)
-    # for name, param in model.named_parameters():
+    model = set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = True)
     #     print(f"Name: {name}")
     #     print(f"  DataType: {param.dtype}")
     #     print(f"  Device: {param.device}")
@@ -803,14 +688,14 @@ if __name__ == "__main__":
     model.train()
     # Define a hook function to print layer names
 # Define a hook function to print layer names and class names
-    def hook_fn(layer_name):
-        def hook(module, input, output):
-            print(f"Layer name in state_dict: {layer_name} | Layer class: {module.__class__.__name__}")
-        return hook
+    # def hook_fn(layer_name):
+    #     def hook(module, input, output):
+    #         print(f"Layer name in state_dict: {layer_name} | Layer class: {module.__class__.__name__}")
+    #     return hook
 
-    # Register the hook function to each layer with its full name
-    for layer_name, module in model.named_modules():
-        module.register_forward_hook(hook_fn(layer_name))
+    # # Register the hook function to each layer with its full name
+    # for layer_name, module in model.named_modules():
+    #     module.register_forward_hook(hook_fn(layer_name))
     train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
     labels = torch.tensor(processed_train_dataset[0]['labels']).unsqueeze(0).to("cuda")
     #vram_estimate = estimate_vram_in_gb(model, train_input_ids)
@@ -839,16 +724,11 @@ if __name__ == "__main__":
     for i in tqdm.tqdm(range(10)):
         with torch.autocast(device_type = "cuda", dtype = torch.float16):
             output = model(train_input_ids)
-            #loss = output.loss
+            loss = output.loss
             print(output)
-        break
-            #loss = output.loss
-            #print(loss.requires_grad)
-            #print(loss)
-            #print(loss.grad_fn)
-        #scaler.scale(loss).backward()
-        #scaler.step(optimizer)
-        3#scaler.update()
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         optimizer.zero_grad()
     #save the final state dict to a file
     torch.save(model.state_dict(), "final_state_dict.pth")

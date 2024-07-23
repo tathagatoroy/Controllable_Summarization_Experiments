@@ -48,28 +48,28 @@ instruction_template = "### Instruction:"
 
 
 #training config 
-training_args = TrainingArguments(
-    output_dir="/scratch/tathagato/openelm_single_attribute_adapter",
-    num_train_epochs=10,
-    per_device_train_batch_size= 1, 
-    gradient_accumulation_steps=2,
-    gradient_checkpointing=True,
-    # optim="paged_adamw_32bit",
+# training_args = TrainingArguments(
+#     output_dir="/scratch/tathagato/openelm_single_attribute_adapter",
+#     num_train_epochs=10,
+#     per_device_train_batch_size= 1, 
+#     gradient_accumulation_steps=2,
+#     gradient_checkpointing=True,
+#     # optim="paged_adamw_32bit",
     
-    #torch_compile=True, # optimizations
-    # optim="adamw_torch_fused", # improved optimizer 
-    optim="adamw_bnb_8bit", #     #['adamw_hf', 'adamw_torch', 'adamw_torch_fused', 'adamw_torch_xla', 'adamw_apex_fused', 'adafactor', 'adamw_bnb_8bit', 'adamw_anyprecision', 'sgd', 'adagrad']
-    report_to="wandb",
+#     #torch_compile=True, # optimizations
+#     # optim="adamw_torch_fused", # improved optimizer 
+#     optim="adamw_bnb_8bit", #     #['adamw_hf', 'adamw_torch', 'adamw_torch_fused', 'adamw_torch_xla', 'adamw_apex_fused', 'adafactor', 'adamw_bnb_8bit', 'adamw_anyprecision', 'sgd', 'adagrad']
+#     report_to="wandb",
     
-    logging_steps=4,
-    save_strategy="epoch",
-    learning_rate=1e-5,
-    #bf16=True,
-    fp16=True,
-    max_grad_norm=0.3,
-    warmup_ratio=0.03,
-    lr_scheduler_type="constant",
-    disable_tqdm= False, #True # disable tqdm since with packing values are in correct
-)
+#     logging_steps=4,
+#     save_strategy="epoch",
+#     learning_rate=1e-5,
+#     #bf16=True,
+#     fp16=True,
+#     max_grad_norm=0.3,
+#     warmup_ratio=0.03,
+#     lr_scheduler_type="constant",
+#     disable_tqdm= False, #True # disable tqdm since with packing values are in correct
+# )
 
 

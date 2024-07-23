@@ -1,0 +1,74 @@
+loading quantized model
+creating cascaded lora model
+trainable params: 4505600 || all params: 620111872 || percentage: 0.73%
+LlamaForCausalLM(
+  (model): LlamaModel(
+    (embed_tokens): Embedding(32000, 2048)
+    (layers): ModuleList(
+      (0-21): 22 x LlamaDecoderLayer(
+        (self_attn): LlamaAttention(
+          (q_proj): CascadedLoRALinear4bit(
+            (base_layer): Linear4bit(in_features=2048, out_features=2048, bias=False)
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2048, out_features=16, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=16, out_features=2048, bias=False)
+            )
+          )
+          (k_proj): CascadedLoRALinear4bit(
+            (base_layer): Linear4bit(in_features=2048, out_features=256, bias=False)
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2048, out_features=16, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=16, out_features=256, bias=False)
+            )
+          )
+          (v_proj): CascadedLoRALinear4bit(
+            (base_layer): Linear4bit(in_features=2048, out_features=256, bias=False)
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2048, out_features=16, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=16, out_features=256, bias=False)
+            )
+          )
+          (o_proj): CascadedLoRALinear4bit(
+            (base_layer): Linear4bit(in_features=2048, out_features=2048, bias=False)
+            (lora_A): ModuleDict(
+              (default): Linear(in_features=2048, out_features=16, bias=False)
+            )
+            (lora_B): ModuleDict(
+              (default): Linear(in_features=16, out_features=2048, bias=False)
+            )
+          )
+          (rotary_emb): LlamaRotaryEmbedding()
+        )
+        (mlp): LlamaMLP(
+          (gate_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+          (up_proj): Linear4bit(in_features=2048, out_features=5632, bias=False)
+          (down_proj): Linear4bit(in_features=5632, out_features=2048, bias=False)
+          (act_fn): SiLU()
+        )
+        (input_layernorm): LlamaRMSNorm()
+        (post_attention_layernorm): LlamaRMSNorm()
+      )
+    )
+    (norm): LlamaRMSNorm()
+  )
+  (lm_head): Linear(in_features=2048, out_features=32000, bias=False)
+)
+Total bytes for parameters that require grad in GB: 0.01678466796875
+Total bytes for parameters that do not require grad in GB: 0.9397964477539062
+model created
+train dataset size 4
+test dataset size 4
+after filtering the dataset size is : 4
+num decayed parameter tensors: 176, with 4,505,600 parameters
+num non-decayed parameter tensors: 0, with 0 parameters
+num decayed parameter tensors: 176, with 4,505,600 parameters
+num non-decayed parameter tensors: 0, with 0 parameters
+tensor([[    1,   529, 29989,  ...,  -100,  -100,  -100]], device='cuda:0')
+>>> >>> >>> 1
+>>> >>> 

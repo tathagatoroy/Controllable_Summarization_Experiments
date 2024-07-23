@@ -10,6 +10,7 @@
 #so we shouldn't do padded dataset. Instead we should do non packed dataset with one example 
 #per data point
 
+import inspect
 import sys
 import logging
 import bitsandbytes as bnb
@@ -24,6 +25,7 @@ import tqdm
 from datasets import load_dataset
 from peft import LoraConfig,PeftConfig, PeftModel, PeftModelForCausalLM
 import torch
+import torch.nn.functional as F
 import transformers
 from trl import SFTTrainer
 import argparse
@@ -36,8 +38,18 @@ from dataclasses import dataclass
 import time
 import numpy as np
 import random
+from accelerate import Accelerator
+from torch.utils.data.dataloader import DataLoader
+from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
+from torch.distributed import init_process_group, destroy_process_group
+from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.distributed as dist
+import math
 #PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+#os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
+#run command is
+#torchrun --standalone --nproc_per_node=8 trainer_for_cascaded_lora.py > debug.txt
 ###################################################################################################################################################################
 #----------------------------------------------------------------TODOS----------------------------------------------------------------------------------------------#
 ''' 
@@ -75,6 +87,7 @@ L
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------#
 ###################################################################################################################################################################
 #config 
+#accelerator = Accelerator(mixed_precision = 'fp16')
 
 
 #TODO
@@ -99,7 +112,7 @@ is_first_layer_being_trained = True
 is_first_layer_being_used_for_inference = True
 is_second_layer_being_used_for_inference = False
 
-cache_dir = "/scratch/murali"
+cache_dir = "/scratch/tathagato"
 output_directory = "test_cascaded_lora"
 base_model_path = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 train_dataset_path = "/home2/tathagato/summarization/MACSum/dataset/macdoc/train_dataset.json"
@@ -110,14 +123,14 @@ max_new_tokens = 150
 top_k = 50
 top_p = 0.95
 temperature = 1
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 #dataset config 
 attribute = "length"
 train_dataset_path = "../dataset/macdoc/train_dataset.json"
 test_dataset_path = "../dataset/macdoc/test_dataset.json"
-test_dataset_size = 4 #-1 for all
-train_dataset_size = 4 #-1 means for all
+test_dataset_size = 16 #-1 for all
+train_dataset_size = 16 #-1 means for all
 
 #model config 
 max_seq_length = 2048
@@ -125,13 +138,311 @@ max_sequence_length = 2048
 
 #training config
 learning_rate = 3e-4
-num_train_epochs = 1
-batch_size_per_device = 1
+num_epochs = 2
+micro_batch_size_per_device = 1 #per device, per micro batch size (not total)
 num_device = 4
-gradient_accumulation_steps = 2
+#gradient_accumulation_steps = 2
+weight_decay = 0.1
+do_gradient_checkpointing = True #wont fit in memory without gradient checkpointing
+fp_16 = False # some issues with fp16 full precision training for now
+beta_1 = 0.9
+beta_2 = 0.95
+epsilon = 1e-8
+grad_clip = True
+grad_clip_value = 1.0
+warmup_ratio = 0.2
+total_batch_size = 8
+
+
+#taken from karpathy code , this is ddp
+
+# set up DDP (distributed data parallel).
+# torchrun command sets the env variables RANK, LOCAL_RANK, and WORLD_SIZE
+ddp = int(os.environ.get('RANK', -1)) != -1 # is this a ddp run?
+if ddp:
+    # use of DDP atm demands CUDA, we set the device appropriately according to rank
+    assert torch.cuda.is_available(), "for now i think we need CUDA for DDP"
+    
+    init_process_group(backend='nccl')
+    ddp_rank = int(os.environ['RANK'])
+    ddp_local_rank = int(os.environ['LOCAL_RANK'])
+    ddp_world_size = int(os.environ['WORLD_SIZE'])
+    device = f'cuda:{ddp_local_rank}'
+    print(device)
+    torch.cuda.set_device(device)
+    master_process = ddp_rank == 0 # this process will do logging, checkpointing etc.
+    if master_process:
+        print("ddp run")
+else:
+    # vanilla, non-DDP run
+    ddp_rank = 0
+    ddp_local_rank = 0
+    ddp_world_size = 1
+    master_process = True
+    # attempt to autodetect device
+    device = "cpu"
+    if torch.cuda.is_available():
+        device = "cuda"
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = "mps"
+    print(f"using device: {device}")
+
+# added after video, pytorch can be serious about it's device vs. device_type distinction
+device_type = "cuda" if device.startswith("cuda") else "cpu"
+assert total_batch_size % (micro_batch_size_per_device * ddp_world_size) == 0
+gradient_accumulation_steps = total_batch_size // (micro_batch_size_per_device * ddp_world_size)
 
 
 
+
+#---------------------------------------CONFIGS DONE-----------------------------------------------------#
+##################################################################################################################3
+
+##########################################################################################################
+#---------------------------------------UTILITY FUNCTIONS-------------------------------------------------#
+#utility functions 
+# copied from transformers.models.bart.modeling_bart
+def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
+    """
+    Shift input ids one token to the right.
+
+    Args:
+        input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`): input ids
+        pad_token_id (`int`): The id of the `padding` token.
+        decoder_start_token_id (`int`): The id of the `start` token.
+    """
+    shifted_input_ids = input_ids.new_zeros(input_ids.shape)
+    shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
+    shifted_input_ids[:, 0] = decoder_start_token_id
+
+    if pad_token_id is None:
+        raise ValueError("self.model.config.pad_token_id has to be defined.")
+    # replace possible -100 values in labels by `pad_token_id`
+    shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
+
+    return shifted_input_ids
+
+def print_device_and_dtype(model, file = sys.stdout):
+    if file == sys.stdout:
+            for name, param in model.named_parameters():
+            # Get the device and dtype of the module's parameters
+            #file = open(file, "a")
+                #if not isinstance(module, (nn.ModuleList, nn.ModuleDict)) and hasattr(module, 'weight') and module.weight is not None:
+                if True:
+
+                    try:
+                        #param = next(module.parameters())
+                        device = param.device
+                        dtype = param.dtype
+                        type = param.type()
+                        req_grad = param.requires_grad
+                        #check if module dict 
+                        if isinstance(param, nn.ModuleDict):
+                            is_module_dict = True
+                        else:
+                            is_module_dict = False
+                    except StopIteration:
+                        device = 'No parameters'
+                        dtype = 'No parameters'
+                        type = 'No parameters'
+
+                    
+                    # Print the name, device, and dtype of the module
+                    print(f"Module: {name}", file = file)
+                    print(f"  Device: {device}", file = file)
+                    print(f"  Dtype: {dtype}", file = file)
+                    print(f"  Type: {type}", file = file)
+                    print(f"  Requires Grad: {req_grad}", file = file)
+                    print(f"  Is Module Dict: {is_module_dict}", file = file)
+                    print(" ",file = file )
+            return 
+
+    with open(file, "w") as file:
+
+        for name, module in model.named_modules():
+            if not isinstance(module, (nn.ModuleList, nn.ModuleDict)) and hasattr(module, 'weight') and module.weight is not None: 
+
+                # Get the device and dtype of the module's parameters
+                #file = open(file, "a")
+                try:
+                    param = next(module.parameters())
+                    device = param.device
+                    dtype = param.dtype
+                    type = param.type()
+                    req_grad = param.requires_grad
+                    #check if module dict 
+                    if isinstance(module, nn.ModuleDict):
+                        is_module_dict = True
+                    else:
+                        is_module_dict = False
+                except StopIteration:
+                    device = 'No parameters'
+                    dtype = 'No parameters'
+                    type = 'No parameters'
+
+                
+                print(f"Module: {name}", file = file)
+                print(f"  Device: {device}", file = file)
+                print(f"  Dtype: {dtype}", file = file)
+                print(f"  Type: {type}", file = file)
+                print(f"  Requires Grad: {req_grad}", file = file)
+                print(f"  Is Module Dict: {is_module_dict}", file = file)
+                print(" ",file = file )
+def estimate_vram_in_gb(model, sample_input, optimizer_cls=torch.optim.AdamW):
+    total_memory = 0
+    param_memory = 0
+    grad_memory = 0
+    activation_memory = 0
+
+    # Function to calculate memory for a tensor
+    def tensor_memory(tensor):
+        return tensor.numel() * tensor.element_size()
+
+    # Calculate memory for parameters and gradients
+    for name, param in model.named_parameters():
+        param_memory += tensor_memory(param) / (1024**3)  # Convert to GB
+        if param.requires_grad:
+            grad_memory += tensor_memory(param) / (1024**3)  # Convert to GB
+    print(f"Parameter memory: {param_memory:.2f} GB")
+
+    # Calculate memory for activations
+    def hook_fn(module, input, output):
+        nonlocal activation_memory
+        if isinstance(output, torch.Tensor):
+            activation_memory += tensor_memory(output) / (1024**3)  # Convert to GB
+        elif isinstance(output, (tuple, list)):
+            activation_memory += sum(tensor_memory(o) for o in output if isinstance(o, torch.Tensor)) / (1024**3)  # Convert to GB
+
+    hooks = []
+    for layer in model.modules():
+        hooks.append(layer.register_forward_hook(hook_fn))
+
+    # Run a forward pass to estimate activation memory
+    with torch.no_grad():
+        #sample_input = sample_input.half().to(next(model.parameters()).device)  # Ensure sample input is in float16
+        #cast in float16
+        with torch.autocast(device_type = "cuda", dtype = torch.float16):
+            model(sample_input)
+
+    # Remove hooks
+    for hook in hooks:
+        hook.remove()
+
+    # Total memory estimation
+    total_memory = param_memory + grad_memory + activation_memory
+
+    # Optimizer state memory estimation (approximation)
+    optimizer_state_memory = 2 * param_memory  # AdamW stores two states per parameter (momentum and variance)
+    total_memory += optimizer_state_memory
+    print(f"Total memory: {total_memory:.2f} GB")
+    print(f"Parameter memory: {param_memory:.2f} GB")
+    print(f"Gradient memory: {grad_memory:.2f} GB")
+    print(f"Activation memory: {activation_memory:.2f} GB")
+    print(f"Optimizer state memory: {optimizer_state_memory:.2f} GB")
+
+    return {
+        'param_memory_gb': param_memory,
+        'grad_memory_gb': grad_memory,
+        'activation_memory_gb': activation_memory,
+        'optimizer_state_memory_gb': optimizer_state_memory,
+        'total_memory_gb': total_memory
+    }
+    
+
+
+
+#directly copied from https://github.com/huggingface/peft/blob/v0.11.0/src/peft/utils/other.py#L89
+def prepare_model_for_kbit_training(model, use_gradient_checkpointing=True, gradient_checkpointing_kwargs=None):
+    r"""
+    Note this method only works for `transformers` models.
+
+    This method wraps the entire protocol for preparing a model before running a training. This includes:
+        1- Cast the layernorm in fp32 2- making output embedding layer require grads 3- Add the upcasting of the lm
+        head to fp32
+
+    Args:
+        model (`transformers.PreTrainedModel`):
+            The loaded model from `transformers`
+        use_gradient_checkpointing (`bool`, *optional*, defaults to `True`):
+            If True, use gradient checkpointing to save memory at the expense of slower backward pass.
+        gradient_checkpointing_kwargs (`dict`, *optional*, defaults to `None`):
+            Keyword arguments to pass to the gradient checkpointing function, please refer to the documentation of
+            `torch.utils.checkpoint.checkpoint` for more details about the arguments that you can pass to that method.
+            Note this is only available in the latest transformers versions (> 4.34.1).
+    """
+    loaded_in_kbit = getattr(model, "is_loaded_in_8bit", False) or getattr(model, "is_loaded_in_4bit", False)
+    is_gptq_quantized = getattr(model, "quantization_method", None) == "gptq"
+    is_aqlm_quantized = getattr(model, "quantization_method", None) == "aqlm"
+    is_eetq_quantized = getattr(model, "quantization_method", None) == "eetq"
+    is_hqq_quantized = getattr(model, "quantization_method", None) == "hqq" or getattr(model, "hqq_quantized", False)
+
+    if gradient_checkpointing_kwargs is None:
+        gradient_checkpointing_kwargs = {}
+
+    for name, param in model.named_parameters():
+        # freeze base model's layers
+        param.requires_grad = False
+
+    if not is_gptq_quantized and not is_aqlm_quantized and not is_eetq_quantized and not is_hqq_quantized:
+        # cast all non INT8 parameters to fp32
+        for param in model.parameters():
+            if (
+                (param.dtype == torch.float16) or (param.dtype == torch.bfloat16)
+            ) and param.__class__.__name__ != "Params4bit":
+                param.data = param.data.to(torch.float32)
+
+    if (
+        loaded_in_kbit or is_gptq_quantized or is_aqlm_quantized or is_eetq_quantized or is_hqq_quantized
+    ) and use_gradient_checkpointing:
+        # When having `use_reentrant=False` + gradient_checkpointing, there is no need for this hack
+        if "use_reentrant" not in gradient_checkpointing_kwargs or gradient_checkpointing_kwargs["use_reentrant"]:
+            # For backward compatibility
+            if hasattr(model, "enable_input_require_grads"):
+                model.enable_input_require_grads()
+            else:
+
+                def make_inputs_require_grad(module, input, output):
+                    output.requires_grad_(True)
+
+                model.get_input_embeddings().register_forward_hook(make_inputs_require_grad)
+
+        # To support older transformers versions, check if the model supports gradient_checkpointing_kwargs
+        _supports_gc_kwargs = "gradient_checkpointing_kwargs" in list(
+            inspect.signature(model.gradient_checkpointing_enable).parameters
+        )
+
+        if not _supports_gc_kwargs and len(gradient_checkpointing_kwargs) > 0:
+            warnings.warn(
+                "gradient_checkpointing_kwargs is not supported in this version of transformers. The passed kwargs will be ignored."
+                " if you want to use that feature, please upgrade to the latest version of transformers.",
+                FutureWarning,
+            )
+
+        gc_enable_kwargs = (
+            {} if not _supports_gc_kwargs else {"gradient_checkpointing_kwargs": gradient_checkpointing_kwargs}
+        )
+
+        # enable gradient checkpointing for memory efficiency
+        model.gradient_checkpointing_enable(**gc_enable_kwargs)
+    return model
+
+def debug_trainable_parameters(model):
+    total_params = 0
+
+    #    Print details of layers with requires_grad=True
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            num_params = param.numel()  # Number of elements in the parameter
+            total_params += num_params
+            print(f"Layer: {name}")
+            print(f"Weight Shape: {param.shape}")
+            print(f"Device: {param.device}")
+            print(f"Number of Parameters in this layer: {num_params}")
+            print(f"Running Total Number of Parameters: {total_params}")
+            print("-" * 50)
+
+    # Print total number of parameters
+    print(f"Total number of trainable parameters: {total_params}")
 
 
 def print_trainable_parameters(model):
@@ -149,6 +460,49 @@ def print_trainable_parameters(model):
         f"all params: {all_param} || "
         f"percentage: {trainable_params/all_param*100:.2f}%"
     )
+def print_gpu_memory_usage():
+    if torch.cuda.is_available():
+        # Current GPU memory usage by tensors in bytes
+        memory_allocated = torch.cuda.memory_allocated()
+        
+        # Total GPU memory reserved by the caching allocator in bytes
+        memory_reserved = torch.cuda.memory_reserved()
+        
+        # Convert to MB
+        memory_allocated_MB = memory_allocated / (1024 ** 2)
+        memory_reserved_MB = memory_reserved / (1024 ** 2)
+        
+        print(f"GPU memory allocated: {memory_allocated_MB:.2f} MB")
+        print(f"GPU memory reserved: {memory_reserved_MB:.2f} MB")
+    else:
+        print("CUDA is not available on this system.")
+
+def compare_state_dicts(initial_dict, final_dict):
+    modified_layers = []
+    for layer_name in initial_dict:
+        if not torch.equal(initial_dict[layer_name], final_dict[layer_name]):
+            modified_layers.append(layer_name)
+    return modified_layers
+
+def count_parameter_bytes(model):
+    total_bytes_requires_grad = 0
+    total_bytes_no_grad = 0
+    
+    for param in model.parameters():
+        param_bytes = param.numel() * param.element_size()
+        if param.requires_grad:
+            total_bytes_requires_grad += param_bytes
+        else:
+            total_bytes_no_grad += param_bytes
+    print(f"Total bytes for parameters that require grad in GB: {total_bytes_requires_grad / (1024**3)}")
+    print(f"Total bytes for parameters that do not require grad in GB: {total_bytes_no_grad / (1024**3)}")
+
+#---------------------------------------UTILITY FUNCTIONS DONE-------------------------------------------------#
+##################################################################################################################3
+
+
+##########################################################################################################
+#---------------------------------------MODEL DEFINITIONS-------------------------------------------------#
 
 #transform a linear layer to a cascaded lora layer
 class CascadedLoRALinear4bit(torch.nn.Module):
@@ -218,57 +572,7 @@ class CascadedLoRALinear4bit(torch.nn.Module):
         self.scaling_2 = self.rank_2 / self.alpha_1
         self.adapter_name = adapter_name
         
-        #initialize with only the  adapter being trained
-        # 1. freeze base model
-        # 2. freeze the second adapter
-        # 3. tune the first adapter
-    #     self.freeze_base_layer()
-    #     self.freeze_the_second_adapter()
-    #     self.tune_the_first_adapter()
-    #     self.set_gradients_for_all_layer()
 
-
-
-    # def freeze_base_layer(self):
-    #     for param in self.base_layer.parameters():
-    #         param.requires_grad = False
-
-    # def set_gradients_for_all_layer(self):
-    #     #print("setting gradients for all layers")
-    #     #print(self.is_second_layar_being_trained)
-    #     if self.is_second_layar_being_trained:
-    #         self.lora_A1[self.adapter_name].requires_grad = True
-    #         self.lora_A2[self.adapter_name].requires_grad = True
-    #         self.lora_B1[self.adapter_name].requires_grad = True
-    #         self.lora_B2[self.adapter_name].requires_grad = True
-
-
-    #     else:
-    #         self.lora_A1[self.adapter_name].requires_grad = False
-    #         self.lora_A2[self.adapter_name].requires_grad = False
-    #         self.lora_B1[self.adapter_name].requires_grad = False
-    #         self.lora_B2[self.adapter_name].requires_grad = False
-            
-    #     if self.is_first_layer_being_trained:
-    #         self.lora_A[self.adapter_name].requires_grad = True
-    #         self.lora_B[self.adapter_name].requires_grad = True
-    #     else:
-    #         self.lora_A[self.adapter_name].requires_grad = False
-    #         self.lora_B[self.adapter_name].requires_grad = False  
-    #     #print("setting gradients for all layers done")
-    #     #print(self.lora_A1[self.adapter_name].requires_grad, self.lora_A2[self.adapter_name].requires_grad, self.lora_B1[self.adapter_name].requires_grad, self.lora_B2[self.adapter_name].requires_grad)
-    
-    # def tune_the_first_adapter(self):
-    #     self.is_first_layer_being_trained = True
-    
-    # def freeze_the_first_adapter(self):
-    #     self.is_first_layer_being_trained = False
-    
-    # def tune_the_second_adapter(self):
-    #     self.is_second_layar_being_trained = True
-    
-    # def freeze_the_second_adapter(self):
-    #     self.is_second_layar_being_trained = False
     #https://github.com/huggingface/peft/blob/main/src/peft/tuners/lora/layer.py
     def forward(self, x):
         
@@ -292,31 +596,6 @@ class CascadedLoRALinear4bit(torch.nn.Module):
             x = self.base_layer(x)
         #print(print_gpu_memory_usage())
         return x
-#https://github.com/karpathy/build-nanogpt/blob/master/train_gpt2.py
-def configure_optimizers(model, weight_decay, learning_rate, device_type = "cuda"):
-    # start with all of the candidate parameters (that require grad)
-    param_dict = {pn: p for pn, p in model.named_parameters()}
-    param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
-    # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
-    # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
-    decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
-    nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
-    optim_groups = [
-        {'params': decay_params, 'weight_decay': weight_decay},
-        {'params': nodecay_params, 'weight_decay': 0.0}
-    ]
-    num_decay_params = sum(p.numel() for p in decay_params)
-    num_nodecay_params = sum(p.numel() for p in nodecay_params)
-    print(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
-    print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
-    # Create AdamW optimizer and use the fused version if it is available
-    #fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
-    # use_fused = fused_available and device_type == "cuda"
-    # if master_process:
-    #     print(f"using fused AdamW: {use_fused}")
-    optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
-    return optimizer
-
 def set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = is_first_layer_being_trained, second_adapter_layer = is_second_layar_being_trained):
     #print(base_layer, first_adapter_layer, second_adapter_layer)
     for name, param in model.named_parameters() :
@@ -373,72 +652,124 @@ def replace_with_cascaded_lora(module, target_modules = target_modules, rank_1 =
             #put everything in device 
         else:
             replace_with_cascaded_lora(child, target_modules, rank_1, rank_2, alpha_1, alpha_2, adapter_name , dropout = None)
-def print_device_and_dtype(model, file = sys.stdout):
-    if file == sys.stdout:
-            for name, param in model.named_parameters():
-            # Get the device and dtype of the module's parameters
-            #file = open(file, "a")
-                #if not isinstance(module, (nn.ModuleList, nn.ModuleDict)) and hasattr(module, 'weight') and module.weight is not None:
-                if True:
 
-                    try:
-                        #param = next(module.parameters())
-                        device = param.device
-                        dtype = param.dtype
-                        type = param.type()
-                        req_grad = param.requires_grad
-                        #check if module dict 
-                        if isinstance(param, nn.ModuleDict):
-                            is_module_dict = True
-                        else:
-                            is_module_dict = False
-                    except StopIteration:
-                        device = 'No parameters'
-                        dtype = 'No parameters'
-                        type = 'No parameters'
+# Function to ensure all submodules are on GPU
+def move_to_device(model, device):
+    for name, module in model.named_modules():
+        try:
+            # Check if the module is already on the device
+            param = next(module.parameters())
+            if param.device != device:
+                # Move the module to the specified device
+                module.to(device)
+                #print(f"Moved module: {name} to {device}")
+        except StopIteration:
+            # No parameters in the module
+            pass
+        
+#TODO 
+#should create a new class like PEFTModel does and make it part of the model class
+def create_cascaded_lora_model_from_quantized_model(quantized_model, target_modules = target_modules, device = None):
+    if device is None:
+        device = torch.device(f"cuda:{ddp_local_rank}" if torch.cuda.is_available() else "cpu")
+#print(quantized_model)
 
-                    
-                    # Print the name, device, and dtype of the module
-                    print(f"Module: {name}", file = file)
-                    print(f"  Device: {device}", file = file)
-                    print(f"  Dtype: {dtype}", file = file)
-                    print(f"  Type: {type}", file = file)
-                    print(f"  Requires Grad: {req_grad}", file = file)
-                    print(f"  Is Module Dict: {is_module_dict}", file = file)
-                    print(" ",file = file )
-            return 
+    replace_with_cascaded_lora(quantized_model, target_modules = target_modules, rank_1 = rank_1, rank_2 = rank_2, alpha_1 = alpha_1, alpha_2 = alpha_2, adapter_name = adapter_name , dropout = dropout)
+    move_to_device(quantized_model, torch.device(f"cuda:{ddp_local_rank}" if torch.cuda.is_available() else "cpu"))
+    #print_device_and_dtype(quantized_model, file = "cascaded_lora_structure.txt")
+    
+#---------------------------------------MODEL DEFINITIONS DONE-------------------------------------------------#
+##################################################################################################################3
 
-    with open(file, "w") as file:
+##########################################################################################################
+#---------------------------------------DATASET AND TRAINING FUNCTIONS-------------------------------------------------#
 
-        for name, module in model.named_modules():
-            if not isinstance(module, (nn.ModuleList, nn.ModuleDict)) and hasattr(module, 'weight') and module.weight is not None: 
+#https://github.com/karpathy/build-nanogpt/blob/master/train_gpt2.py
 
-                # Get the device and dtype of the module's parameters
-                #file = open(file, "a")
-                try:
-                    param = next(module.parameters())
-                    device = param.device
-                    dtype = param.dtype
-                    type = param.type()
-                    req_grad = param.requires_grad
-                    #check if module dict 
-                    if isinstance(module, nn.ModuleDict):
-                        is_module_dict = True
-                    else:
-                        is_module_dict = False
-                except StopIteration:
-                    device = 'No parameters'
-                    dtype = 'No parameters'
-                    type = 'No parameters'
+def get_lr(it, warmup_ratio, max_steps, lr = learning_rate):
+    max_lr = lr
+    min_lr = 0.1 * max_lr
+    warmup_steps = int(max_steps * warmup_ratio)
+    # 1) linear warmup for warmup_iters steps
+    if it < warmup_steps:
+        return max_lr * (it+1) / warmup_steps
+    # 2) if it > lr_decay_iters, return min learning rate
+    if it > max_steps:
+        return min_lr
+    # 3) in between, use cosine decay down to min learning rate
+    decay_ratio = (it - warmup_steps) / (max_steps - warmup_steps)
+    assert 0 <= decay_ratio <= 1
+    coeff = 0.5 * (1.0 + math.cos(math.pi * decay_ratio)) # coeff starts at 1 and goes to 0
+    return min_lr + coeff * (max_lr - min_lr)
 
-                
-                print(f"Module: {name}", file = file)
-                print(f"  Device: {device}", file = file)
-                print(f"  Dtype: {dtype}", file = file)
-                print(f"  Type: {type}", file = file)
-                print(f"  Requires Grad: {req_grad}", file = file)
-                print(f"  Is Module Dict: {is_module_dict}", file = file)
-                print(" ",file = file )
+
+def configure_optimizers(model, weight_decay, learning_rate, device_type = "cuda"):
+    # start with all of the candidate parameters (that require grad)
+    param_dict = {pn: p for pn, p in model.named_parameters()}
+    param_dict = {pn: p for pn, p in param_dict.items() if p.requires_grad}
+    # create optim groups. Any parameters that is 2D will be weight decayed, otherwise no.
+    # i.e. all weight tensors in matmuls + embeddings decay, all biases and layernorms don't.
+    decay_params = [p for n, p in param_dict.items() if p.dim() >= 2]
+    nodecay_params = [p for n, p in param_dict.items() if p.dim() < 2]
+    optim_groups = [
+        {'params': decay_params, 'weight_decay': weight_decay},
+        {'params': nodecay_params, 'weight_decay': 0.0}
+    ]
+    num_decay_params = sum(p.numel() for p in decay_params)
+    num_nodecay_params = sum(p.numel() for p in nodecay_params)
+    if master_process:
+        print(f"num decayed parameter tensors: {len(decay_params)}, with {num_decay_params:,} parameters")
+        print(f"num non-decayed parameter tensors: {len(nodecay_params)}, with {num_nodecay_params:,} parameters")
+    # Create AdamW optimizer and use the fused version if it is available
+    fused_available = 'fused' in inspect.signature(torch.optim.AdamW).parameters
+    use_fused = fused_available and device_type == "cuda"
+    # if master_process:
+    #     print(f"using fused AdamW: {use_fused}")
+    optimizer = torch.optim.AdamW(optim_groups, lr=learning_rate, betas=(beta_1, beta_2), eps=epsilon, fused=use_fused)
+    return optimizer
+
+class distributed_dataloader:
+    def __init__(self, dataset, batch_size = micro_batch_size_per_device , num_device = ddp_world_size, device_rank = ddp_local_rank, drop_last = True):
+        #shuffle the dataset 
+        self.dataset = dataset.shuffle(seed = 42)
+        self.batch_size = batch_size
+        self.dataset = dataset
+        self.num_device = num_device
+        self.device_rank = device_rank
+        self.num_batches = len(self.dataset) // (self.batch_size * self.num_device)
+        self.reset()
+        
+    def reset(self):
+        #gpu 0 : starts at 0
+        #gpu 1 : starts at 0 + batch_size
+        #gpu 2 : starts at 0 + 2 * batch_size
+        #gpu 3 : starts at 0 + 3 * batch_size
+        
+        self.current_pos =  self.device_rank * self.batch_size 
+    
+    def collate_fn(self, batch, start, end):
+        #each example is a dictionary with keys input_ids, attention_mask, labels
+        #return a dictionary such that each key is tensor of shape (batch_size, original_shape)
+        #each key is a list of tensor
+        # I need to tensorize the list of tensors
+        for key in batch.keys():
+            if key != "text":
+                batch[key] = torch.stack([torch.tensor(example) for example in batch[key]])
+            
+        #this is for debugging
+        batch["start"] = start
+        batch["end"] = end
+        return batch
+
+    def next_batch(self):
+        batch = self.dataset[self.current_pos  : self.current_pos + self.batch_size]
+        self.current_pos += self.batch_size * self.num_device
+        if self.current_pos >= len(self.dataset):
+            self.reset()
+        return self.collate_fn(batch, self.current_pos, self.current_pos + self.batch_size)
+
+
+
 
 #line 379 https://github.com/huggingface/trl/blob/18a33ffcd3a576f809b6543a710e989333428bd3/trl/trainer/sft_trainer.py#L379
 # this does not return batched dataset and each example is tokenized but do not have the same length
@@ -464,30 +795,8 @@ def prepare_non_packed_dataloader(tokenizer, dataset, dataset_text_field = "text
 
     return tokenized_dataset
 
-# Function to ensure all submodules are on GPU
-def move_to_device(model, device):
-    for name, module in model.named_modules():
-        try:
-            # Check if the module is already on the device
-            param = next(module.parameters())
-            if param.device != device:
-                # Move the module to the specified device
-                module.to(device)
-                #print(f"Moved module: {name} to {device}")
-        except StopIteration:
-            # No parameters in the module
-            pass
 
-#TODO 
-#should create a new class like PEFTModel does and make it part of the model class
-def create_cascaded_lora_model_from_quantized_model(quantized_model, target_modules = target_modules, device = None):
-    if device is None:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#print(quantized_model)
 
-    replace_with_cascaded_lora(quantized_model, target_modules = target_modules, rank_1 = rank_1, rank_2 = rank_2, alpha_1 = alpha_1, alpha_2 = alpha_2, adapter_name = adapter_name , dropout = dropout)
-    move_to_device(quantized_model, torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-    #print_device_and_dtype(quantized_model, file = "cascaded_lora_structure.txt")
     
 def apply_inference_chat_template(
         example, 
@@ -527,67 +836,6 @@ def apply_chat_template(
     return example
 
 
-def estimate_vram_in_gb(model, sample_input, optimizer_cls=torch.optim.AdamW):
-    total_memory = 0
-    param_memory = 0
-    grad_memory = 0
-    activation_memory = 0
-
-    # Function to calculate memory for a tensor
-    def tensor_memory(tensor):
-        return tensor.numel() * tensor.element_size()
-
-    # Calculate memory for parameters and gradients
-    for name, param in model.named_parameters():
-        param_memory += tensor_memory(param) / (1024**3)  # Convert to GB
-        if param.requires_grad:
-            grad_memory += tensor_memory(param) / (1024**3)  # Convert to GB
-    print(f"Parameter memory: {param_memory:.2f} GB")
-
-    # Calculate memory for activations
-    def hook_fn(module, input, output):
-        nonlocal activation_memory
-        if isinstance(output, torch.Tensor):
-            activation_memory += tensor_memory(output) / (1024**3)  # Convert to GB
-        elif isinstance(output, (tuple, list)):
-            activation_memory += sum(tensor_memory(o) for o in output if isinstance(o, torch.Tensor)) / (1024**3)  # Convert to GB
-
-    hooks = []
-    for layer in model.modules():
-        hooks.append(layer.register_forward_hook(hook_fn))
-
-    # Run a forward pass to estimate activation memory
-    with torch.no_grad():
-        #sample_input = sample_input.half().to(next(model.parameters()).device)  # Ensure sample input is in float16
-        #cast in float16
-        with torch.autocast(device_type = "cuda", dtype = torch.float16):
-            model(sample_input)
-
-    # Remove hooks
-    for hook in hooks:
-        hook.remove()
-
-    # Total memory estimation
-    total_memory = param_memory + grad_memory + activation_memory
-
-    # Optimizer state memory estimation (approximation)
-    optimizer_state_memory = 2 * param_memory  # AdamW stores two states per parameter (momentum and variance)
-    total_memory += optimizer_state_memory
-    print(f"Total memory: {total_memory:.2f} GB")
-    print(f"Parameter memory: {param_memory:.2f} GB")
-    print(f"Gradient memory: {grad_memory:.2f} GB")
-    print(f"Activation memory: {activation_memory:.2f} GB")
-    print(f"Optimizer state memory: {optimizer_state_memory:.2f} GB")
-
-    return {
-        'param_memory_gb': param_memory,
-        'grad_memory_gb': grad_memory,
-        'activation_memory_gb': activation_memory,
-        'optimizer_state_memory_gb': optimizer_state_memory,
-        'total_memory_gb': total_memory
-    }
-    
-
 
 
 
@@ -603,29 +851,7 @@ def set_all_seeds(seed):
     # Ensure deterministic behavior by setting environment variables
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-def print_gpu_memory_usage():
-    if torch.cuda.is_available():
-        # Current GPU memory usage by tensors in bytes
-        memory_allocated = torch.cuda.memory_allocated()
-        
-        # Total GPU memory reserved by the caching allocator in bytes
-        memory_reserved = torch.cuda.memory_reserved()
-        
-        # Convert to MB
-        memory_allocated_MB = memory_allocated / (1024 ** 2)
-        memory_reserved_MB = memory_reserved / (1024 ** 2)
-        
-        print(f"GPU memory allocated: {memory_allocated_MB:.2f} MB")
-        print(f"GPU memory reserved: {memory_reserved_MB:.2f} MB")
-    else:
-        print("CUDA is not available on this system.")
 
-def compare_state_dicts(initial_dict, final_dict):
-    modified_layers = []
-    for layer_name in initial_dict:
-        if not torch.equal(initial_dict[layer_name], final_dict[layer_name]):
-            modified_layers.append(layer_name)
-    return modified_layers
 
 if __name__ == "__main__":
     os.makedirs(output_directory, exist_ok = True)
@@ -639,13 +865,14 @@ if __name__ == "__main__":
         use_cache=False,
         trust_remote_code=True,
         torch_dtype=torch.float16,
-        device_map='cuda:0',
+        device_map=f'cuda:{ddp_local_rank}',
         cache_dir = cache_dir,
         attn_implementation = "eager",
         quantization_config = nf4_config, 
     )
 
-    print("loading quantized model")
+    
+    #print("loading quantized model in device : ",ddp_local_rank)
     model = AutoModelForCausalLM.from_pretrained(base_model_path, **model_kwargs)
     tokenizer = AutoTokenizer.from_pretrained(base_model_path,cache_dir = cache_dir)
     #tinyllama pad token id is same as eos token id which is bad for finetuning because
@@ -657,18 +884,19 @@ if __name__ == "__main__":
 
 
     #cascaded lora model
-    print("creating cascaded lora model")
+    #print("creating cascaded lora model : ", ddp_local_rank)
     create_cascaded_lora_model_from_quantized_model(model)
-    print("model created")
+    #print("model created : ", ddp_local_rank)
     train_dataset = load_dataset_from_path_phi(train_dataset_path, attribute)
     if train_dataset_size != -1:
         train_dataset = train_dataset.select(range(train_dataset_size))
     test_dataset = load_dataset_from_path_phi(test_dataset_path, attribute)
     if test_dataset_size != -1:
         test_dataset = test_dataset.select(range(test_dataset_size))
-        
-    print("train dataset size", len(train_dataset))
-    print("test dataset size", len(test_dataset))
+    
+    if master_process:
+        print("train dataset size", len(train_dataset))
+        print("test dataset size", len(test_dataset))
 
     #remove all the columns except the text column
     train_column_names = train_dataset.column_names
@@ -683,25 +911,117 @@ if __name__ == "__main__":
     )
 
 
-    test_column_names = []
-
+    test_column_names = test_dataset.column_names
+    #use for generation
+    # processed_test_dataset = test_dataset.map(
+    #     apply_inference_chat_template,
+    #     fn_kwargs={"tokenizer": tokenizer},
+    #     num_proc=10,
+    #     remove_columns=test_column_names,
+    #     desc="Applying chat template to test_sft",
+    # )
+    
     processed_test_dataset = test_dataset.map(
-        apply_inference_chat_template,
+        apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
         num_proc=10,
         remove_columns=test_column_names,
         desc="Applying chat template to test_sft",
     )
     
+    train_dataloader = distributed_dataloader(processed_train_dataset, batch_size = micro_batch_size_per_device, num_device = ddp_world_size, device_rank = ddp_local_rank, drop_last = True)
+    val_dataloader = distributed_dataloader(processed_test_dataset, batch_size = micro_batch_size_per_device, num_device = ddp_world_size, device_rank = ddp_local_rank, drop_last = True)
+    
+    dataset_size = len(processed_train_dataset)
+    num_steps_per_epoch = dataset_size // total_batch_size
+    total_steps = num_epochs * num_steps_per_epoch
+    if do_gradient_checkpointing:
+        model.gradient_checkpointing_enable()
+
+    #important the set gradient is called after kbit training is done
+    model = prepare_model_for_kbit_training(model)
+    model = set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = True, second_adapter_layer = False)
+    if ddp:
+         model = DDP(model, device_ids=[ddp_local_rank])
+    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
+    optimizer = configure_optimizers(raw_model , weight_decay=weight_decay, learning_rate=learning_rate)
+
+    if master_process:
+        print_trainable_parameters(model)
+        print(f"total steps : {total_steps} , num steps per epoch : {num_steps_per_epoch}, dataset size : {dataset_size}")
+    
+    
+    model.train()
+    for step in tqdm.tqdm(range(total_steps)):
+        t0 = time.time()
+        optimizer.zero_grad()
+        loss_acc = torch.tensor(0.0).to(f"cuda:{ddp_local_rank}")
+        for micro_step in range(gradient_accumulation_steps):
+            batch = train_dataloader.next_batch()
+            input_ids = batch["input_ids"].to(f"cuda:{ddp_local_rank}")
+            labels = batch["labels"].to(f"cuda:{ddp_local_rank}")
+            #make all pad tokens to -100
+            labels[labels == tokenizer.pad_token_id] = -100
+            loss = model(input_ids, labels = labels).loss
+            loss = loss / gradient_accumulation_steps
+            loss_acc += loss.detach()
+            #we want to sync only after all the micro steps are done
+            if ddp:
+                model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
+            loss.backward()
+        #get the total loss of the step 
+        if ddp:
+            dist.all_reduce(loss_acc, op=dist.ReduceOp.AVG)
+        
+        #gradient clipping
+        if grad_clip:
+            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_value)
+        #get scheduled learning rate
+        lr = get_lr(step, warmup_ratio, total_steps)
+        #update the learning rate
+        for param_group in optimizer.param_groups:
+            param_group["lr"] = lr
+        optimizer.step()
+        #wait for the gpu to be done
+        torch.cuda.synchronize()
+        t1 = time.time()
+        time_taken_per_example = (t1 - t0) / (total_batch_size * gradient_accumulation_steps)
+        if master_process:
+            if grad_clip:
+                print(f"step : {step}, loss : {loss_acc.item()}, time taken : {t1 - t0}, norm : {norm}, lr : {lr}, time taken per example : {time_taken_per_example}")
+            else:
+                print(f"step : {step}, loss : {loss_acc.item()}, time taken : {t1 - t0}, lr : {lr}, time taken per example : {time_taken_per_example}")        
+    if ddp:
+        destroy_process_group()        
+    
+    
+    #--------------------------------- TEST DATALOADER --------------------------------------------------------
+    # train_dataloader = distributed_dataloader(processed_train_dataset, batch_size = micro_batch_size_per_device, num_device = ddp_world_size, device_rank = ddp_local_rank, drop_last = True)
+    # val_dataloader = distributed_dataloader(processed_test_dataset, batch_size = micro_batch_size_per_device, num_device = ddp_world_size, device_rank = ddp_local_rank, drop_last = True)
+    
+    # for i in range(10):
+    #     print("train dataloader")
+    #     batch = train_dataloader.next_batch()
+    #     print("val dataloader")
+    #     batch = val_dataloader.next_batch()
+    #     print("TRAINING")
+    #     print(f"{ddp_local_rank} : {batch['start']} : {batch['end']} input_id shape : {batch['input_ids'].shape}, labels shape : {batch['labels'].shape}")
+    # if ddp:
+    #     destroy_process_group()
+    # exit()
+    
+    
     #remove all instances where len(prompt) > 2048 in the test dataset
-    processed_test_dataset = processed_test_dataset.filter(lambda x: len(tokenizer(x["messages_for_inference"], return_tensors="pt")["input_ids"]) <= max_sequence_length - max_new_tokens - 10)
-    print("after filtering the dataset size is : {0}".format(len(processed_test_dataset)))
+    #use this for generation
+    # processed_test_dataset = processed_test_dataset.filter(lambda x: len(tokenizer(x["messages_for_inference"], return_tensors="pt")["input_ids"]) <= max_sequence_length - max_new_tokens - 10)
+    # if master_process
+    #     print("after filtering the dataset size is : {0}".format(len(processed_test_dataset)))
 
     #TODO
     #1 set gradient for all layer should be made as method for the model class itself
 #--------------------------------- CHECK WHETHER FREEZING IS WORKING OR NOT -------------------------------------#
     #only set the first adapter layer to be trainable
-    model = set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = True, second_adapter_layer = False)
+    # model = set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = True, second_adapter_layer = False)
     # for name, param in model.named_parameters():
     #     print(f"Name: {name}")
     #     print(f"  DataType: {param.dtype}")
@@ -798,60 +1118,87 @@ if __name__ == "__main__":
 
 #----------------------------------GENERATION AND FORWARD PASS SEEMS TO BE WORKING-----------------------------------#
 #---------------------------------------------CHECK WHICH PARAMETERS BACKWARD IS UPDATING---------------------------------#
-    #set the model to train mode
-    #print(processed_train_dataset[0].keys())
-    model.train()
-    # Define a hook function to print layer names
-# Define a hook function to print layer names and class names
-    def hook_fn(layer_name):
-        def hook(module, input, output):
-            print(f"Layer name in state_dict: {layer_name} | Layer class: {module.__class__.__name__}")
-        return hook
+    
+    dataset_size = len(processed_train_dataset)
+    num_steps_per_epoch = dataset_size // total_batch_size
+    total_steps = num_epochs * num_steps_per_epoch
+    if ddp:
+         model = DDP(model, device_ids=[ddp_local_rank])
+    raw_model = model.module if ddp else model # always contains the "raw" unwrapped model
+    optimizer = configure_optimizers(raw_model , weight_decay=weight_decay, learning_rate=learning_rate)
 
-    # Register the hook function to each layer with its full name
-    for layer_name, module in model.named_modules():
-        module.register_forward_hook(hook_fn(layer_name))
-    train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
-    labels = torch.tensor(processed_train_dataset[0]['labels']).unsqueeze(0).to("cuda")
-    #vram_estimate = estimate_vram_in_gb(model, train_input_ids)
-    #print_device_and_dtype(model)
-    #print(vram_estimate)
-    
-    #save the initial state dict to a file
-    torch.save(model.state_dict(), "initial_state_dict.pth")
-    
-    #run the forward pass with torchbf16
-    #SGD optimizer
-    #optimizer = torch.optim.AdamW(model.parameters(), lr = 3e-4)
-    optimizer = configure_optimizers(model , weight_decay=0.1, learning_rate=6e-4)
-    optimizer.zero_grad()
-    # from https://pytorch.org/tutorials/recipes/recipes/amp_recipe.html
-    torch.set_float32_matmul_precision('high') # this is not the higest precision 32 : is seen as sum of 16 + 16
+    if do_gradient_checkpointing:
+        model.gradient_checkpointing_enable()
+    #important the set gradient is called after kbit training is done
+    model = prepare_model_for_kbit_training(model)
+    model = set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = True, second_adapter_layer = False)
     print_trainable_parameters(model)
-    #model = torch.compile(model)
+    model.train()
+    if master_process:
+        print(f"total steps : {total_steps} , num steps per epoch : {num_steps_per_epoch}, dataset size : {dataset_size}")
+    for step in tqdm.tqmd(range(total_steps)):
+        t0 = time.time()
+        Optimizer.zero_grad()
+        loss_acc = 0
+        for micro_step in range(gradient_accumulation_steps):
+            batch = train_dataloader.next_batch()
+            input_ids = batch["input_ids"].to(f"cuda:{ddp_local_rank}")
+            labels = batch["labels"].to(f"cuda:{ddp_local_rank}")
+            #make all pad tokens to -100
+            labels[labels == tokenizer.pad_token_id] = -100
+            loss = model(input_ids, labels = labels).loss
+            loss = loss / gradient_accumulation_steps
+            loss_acc += loss.detach().item()
+            #we want to sync only after all the micro steps are done
+            if ddp:
+                model.require_backward_grad_sync = (micro_step == gradient_accumulation_steps - 1)
+            loss.backward()
+        #get the total loss of the step 
+        if ddp:
+            dist.all_reduce(loss_acc, op=dist.ReduceOp.AVG)
+        
+        #gradient clipping
+        if grad_clip:
+            norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_value)
+        #get scheduled learning rate
+        lr = get_lr(step, warmup_ratio, total_steps)
+        #update the learning rate
+        for param_group in Optimizer.param_groups:
+            param_group["lr"] = lr
+        Optimizer.step()
+        #wait for the gpu to be done
+        torch.cuda.synchonize()
+        t1 = time.time()
+        time_taken_per_example = (t1 - t0) / (total_batch_size * gradient_accumulation_steps)
+        if master_process:
+            if grad_clip:
+                print(f"step : {step}, loss : {loss_acc}, time taken : {t1 - t0}, norm : {norm}, lr : {lr}, time taken per example : {time_taken_per_example}")
+            else:
+                print(f"step : {step}, loss : {loss_acc}, time taken : {t1 - t0}, lr : {lr}, time taken per example : {time_taken_per_example}")        
+    if ddp:
+        destroy_process_group()        
+    
+    
+    
+    # train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to(f"cuda:{ddp_local_rank}")
+    # labels = torch.tensor(processed_train_dataset[0]['labels']).unsqueeze(0).to("cuda":{ddp_local_rank})
+    # #make all pad tokens to -100
+    # labels[labels == tokenizer.pad_token_id] = -100
+    # start_time = time.time()
+    # optimizer.zero_grad()
+    # #with torch.autocast(device_type = "cuda", dtype = torch.float16):
+    # output = model(train_input_ids, labels = labels)
+    # loss = output.loss
+    # loss.backward()
+    # if grad_clip:
+    #     norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_value)
+    # optimizer.step()
+    # end_time = time.time()
+    # print("time taken for forward pass : ", end_time - start_time)
+    
 
-
-    #torch.autograd.set_grad_enabled(False)    
-    scaler = torch.cuda.amp.GradScaler()
-    #model.gradient_checkpointing_enable()
-    #model.enable_input_require_grads()
-    print(model)
-    for i in tqdm.tqdm(range(10)):
-        with torch.autocast(device_type = "cuda", dtype = torch.float16):
-            output = model(train_input_ids)
-            #loss = output.loss
-            print(output)
-        break
-            #loss = output.loss
-            #print(loss.requires_grad)
-            #print(loss)
-            #print(loss.grad_fn)
-        #scaler.scale(loss).backward()
-        #scaler.step(optimizer)
-        3#scaler.update()
-        optimizer.zero_grad()
-    #save the final state dict to a file
-    torch.save(model.state_dict(), "final_state_dict.pth")
+    
+ 
 
 
 

@@ -241,7 +241,7 @@ if __name__ == "__main__":
         "logging_steps": 20,
         "logging_strategy": "steps",
         "lr_scheduler_type": "cosine",
-        "num_train_epochs": 1,
+        "num_train_epochs": 8,
         "max_steps": -1,
         "output_dir": args.output_dir,
         "overwrite_output_dir": True,
@@ -344,7 +344,6 @@ if __name__ == "__main__":
     print_trainable_parameters(model)
     print(model)
     count_parameter_bytes(model)
-    #exit()
     #print("active3\n",model.active_adapters)
 
 
@@ -373,87 +372,64 @@ if __name__ == "__main__":
         args.val_dataset_size = len(test_dataset)
     
     #get subset of the train dataset
-    train_dataset = train_dataset.select(range(args.train_dataset_size))
-    test_dataset = test_dataset.select(range(args.test_dataset_size))
+    #train_dataset = train_dataset.select(range(args.train_dataset_size))
+    #test_dataset = test_dataset.select(range(args.test_dataset_size))
 
 
-    train_dataset = train_dataset.select(range(12))
-    test_dataset = test_dataset.select(range(12))
+    train_dataset = train_dataset.select(range(4))
+    test_dataset = test_dataset.select(range(4))
 
 
 
     print("train dataset size", len(train_dataset))
     print("test dataset size", len(test_dataset))
+    
+    print("train dataset size", len(train_dataset))
+    print("test dataset size", len(test_dataset))
 
     #remove all the columns except the text column
-    column_names = train_dataset.column_names
+    train_column_names = train_dataset.column_names
 
-    print(len(train_dataset))
 
     processed_train_dataset = train_dataset.map(
         apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
         num_proc=10,
-        remove_columns=column_names,
+        remove_columns=train_column_names,
         desc="Applying chat template to train_sft",
     )
+
+
+    test_column_names = []
 
     processed_test_dataset = test_dataset.map(
         apply_inference_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
         num_proc=10,
-        remove_columns=column_names,
+        remove_columns=test_column_names,
         desc="Applying chat template to test_sft",
     )
-    # for key in processed_train_dataset[0].keys():
-    #     print(key)
-    #     print(processed_train_dataset[0][key])
-    #     print("\n")
-    # ###########
-    # Training
-    ###########
-    trainer = SFTTrainer(
-        model=model,
-        args=train_conf,
-        peft_config=peft_conf,
-        train_dataset=processed_train_dataset,
-        max_seq_length=2048,
-        tokenizer=tokenizer,
-        #callbacks=[InferenceCallback(model, tokenizer, processed_test_dataset, inference_directory=args.inference_directory, args=args)],
-        dataset_text_field = "text",
-        packing = False
-
-
-    )
-    #dataloader = trainer.get_train_dataloader()
     
-    #import code; code.interact(local = locals())
+    #remove all instances where len(prompt) > 2048 in the test dataset
+    #processed_test_dataset = processed_test_dataset.filter(lambda x: len(tokenizer(x["messages_for_inference"], return_tensors="pt")["input_ids"]) <= max_sequence_length - max_new_tokens - 10)
+    #print("after filtering the dataset size is : {0}".format(len(processed_test_dataset)))
 
-    print("is  model parallelism " ,trainer.args.parallel_mode)
-
-    train_result = trainer.train()
-    metrics = train_result.metrics
-    trainer.log_metrics("train", metrics)
-    trainer.save_metrics("train", metrics)
-    trainer.save_state()
-
-
-    #############
-    # Evaluation
-    #############
-    #print("tokenizer padding side", tokenizer.padding_side)
-    #tokenizer.padding_side = 'left'
-    # metrics = trainer.evaluate()
-    # metrics["eval_samples"] = len(processed_test_dataset)
-    # trainer.log_metrics("eval", metrics)
-    # trainer.save_metrics("eval", metrics)
-
-
-    # ############
-    # # Save model
-    # ############
-    trainer.save_model(train_conf.output_dir)
     
-    #merge and unload and save the model
-    #model = model.merge_and_unload()
-    #model.save_pretrained(os.path.join(train_conf.output_dir,"final_merged_model"))
+    model.train()
+    train_input_ids = torch.tensor(processed_train_dataset[0]['input_ids']).unsqueeze(0).to("cuda")
+    labels = torch.tensor(processed_train_dataset[0]['labels']).unsqueeze(0).to("cuda")
+    torch.set_float32_matmul_precision('high') # this is not the higest precision 32 : is seen as sum of 16 + 16
+    print_trainable_parameters(model)
+    scaler = torch.cuda.amp.GradScaler()
+    print(model)
+    for i in tqdm.tqdm(range(10)):
+        with torch.autocast(device_type = "cuda", dtype = torch.float16):
+            output = model(train_input_ids)
+            loss = output.loss
+            print(output)
+
+
+
+
+
+    

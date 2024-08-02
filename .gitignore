@@ -109,3 +109,10 @@ venv.bak/
 
 *.log 
 *.txt
+
+#ignore all wandb folder
+wandb/
+#ignore all .pt and .pth file
+*.pt
+*.pth
+

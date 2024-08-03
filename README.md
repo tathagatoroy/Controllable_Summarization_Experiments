@@ -1,3 +1,10 @@
+# ACKNOWLEDGEMENT
+This is forked from [here](https://github.com/psunlpgroup/MACSum)
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Original Readme
 ## MACSum
 This repository maintains dataset, metrics, and models for TACL 2023 paper [MACSum: Controllable Summarization with Mixed Attributes](https://arxiv.org/abs/2211.05041).
 

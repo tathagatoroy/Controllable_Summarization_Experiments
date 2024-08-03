@@ -432,6 +432,7 @@ def output_length_metrics(data):
     cer = get_control_value_for_length(summaries, references)
     print("CER", cer)
     result['overall_cer'] = cer
+    return result
     
 
     # elif attribute == "extractiveness":
@@ -667,6 +668,10 @@ if __name__ == "__main__":
         data = json.load(open(file, "r"))
         #take only the first 10 examples
         #data = {k: data[k] for k in list(data.keys())[:10]}
+        if attribute != 'length':
+            continue
+
+    
 
         if attribute == "length":
             result = output_length_metrics(data)
@@ -694,7 +699,7 @@ if __name__ == "__main__":
             print("Attribute not found")
             continue
         print(f"{file} done")
-    output_file_name = "non_packed_combined_result.json"
+    output_file_name = "non_packed_length_result.json"
     with open(output_file_name, "w") as f:
         json.dump(all_result, f)
     

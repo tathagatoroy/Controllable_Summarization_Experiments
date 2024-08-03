@@ -1,7 +1,0 @@
-{
-    "length_checkpoint" : "/scratch/tathagato/adapter_experiments/2024-05-18-03-29-07_length_length_macsum_TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    "extractive_checkpoint" : "/scratch/tathagato/adapter_experiments/2024-05-18-05-12-39_extractiveness_extractiveness_macsum_TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    "topic_checkpoint" : "/scratch/tathagato/adapter_experiments/2024-05-18-06-56-18_topic_topic_macsum_TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    "length_then_extractive" : "/scratch/tathagato/adapter_experiments/length_and_extractiveness/extractiveness2024-05-18-12-14-49_extractiveness"
-    
-}

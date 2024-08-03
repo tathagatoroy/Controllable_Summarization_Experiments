@@ -84,6 +84,21 @@ output = L_B(L_A(x))
 L_B(L_A(x))
 L
 '''
+''' 
+OBSERVATIONS :
+
+1. val loss for first attributes goes down pretty easily and then goes up
+2. second attribute loss mostly random.
+3. Would need regularization for both 
+4. further scope for the loss to go down in the first attribute 
+
+TOD0 : 
+1. should add neftune noisy embeddingvs 
+2. checkout regularization
+3. cleanup the code file 
+
+
+'''
 
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -141,8 +156,8 @@ train_dataset_size_1 = -1 #-1 means for all, 2 denotes for second attribute
 train_dataset_size_2 = -1
 test_dataset_size_2 = -1
 eval_steps = 100
-num_epochs = 5
-checkpoint_steps = 200 #save model after every 200 steps
+num_epochs = 3
+checkpoint_steps = 100 #save model after every 200 steps
 
 
 #debug dataset config
@@ -165,7 +180,7 @@ learning_rate = 3e-4
 micro_batch_size_per_device = 2 #per device, per micro batch size (not total)
 num_device = 4
 #gradient_accumulation_steps = 2
-weight_decay = 0.1
+weight_decay = 1
 do_gradient_checkpointing = True #wont fit in memory without gradient checkpointing
 fp_16 = False # some issues with fp16 full precision training for now
 beta_1 = 0.9
@@ -985,14 +1000,14 @@ if __name__ == "__main__":
     processed_train_dataset_1 = train_dataset_1.map(
         apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
-        num_proc=10,
+        num_proc=num_proc,
         remove_columns=train_column_names_1,
         desc="Applying chat template to train_sft",
     )
     processed_train_dataset_2 = train_dataset_2.map(
         apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
-        num_proc=10,
+        num_proc=num_proc,
         remove_columns=train_column_names_2,
         desc="Applying chat template to train_sft",
     )
@@ -1010,14 +1025,14 @@ if __name__ == "__main__":
     processed_test_dataset_1 = test_dataset_1.map(
         apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
-        num_proc=10,
+        num_proc=num_proc,
         remove_columns=test_column_names_1,
         desc="Applying chat template to test_sft",
     )
     processed_test_dataset_2 = test_dataset_2.map(
         apply_chat_template,
         fn_kwargs={"tokenizer": tokenizer},
-        num_proc=10,
+        num_proc=num_proc,
         remove_columns=test_column_names_2,
         desc="Applying chat template to test_sft",
     )
@@ -1133,6 +1148,8 @@ if __name__ == "__main__":
     # enable the inference of the second adapter layer
     raw_model = set_gradient_for_all_layers(raw_model, base_layer = False, first_adapter_layer = False, second_adapter_layer = True) 
     raw_model = set_inference_parameters_for_all_layers(raw_model, first_adapter_layer = True, second_adapter_layer = True)
+    #second training is much more noisy, adjusting the learning rate to be lower
+    learning_rate = 3e-5
     optimizer = configure_optimizers(raw_model , weight_decay=weight_decay, learning_rate=learning_rate)
     if master_process:
         print("starting with the second  attribute training")

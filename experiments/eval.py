@@ -693,6 +693,7 @@ if __name__ == "__main__":
         else:
             print("Attribute not found")
             continue
+        print(f"{file} done")
     output_file_name = "non_packed_combined_result.json"
     with open(output_file_name, "w") as f:
         json.dump(all_result, f)

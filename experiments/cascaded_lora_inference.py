@@ -55,7 +55,7 @@ base_model_path = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 max_sequence_length = 2048
 num_proc = 9
 #generation config 
-max_new_tokens = 150
+max_new_tokens = 400
 top_k = 50
 top_p = 0.95
 temperature = 1
@@ -63,18 +63,22 @@ attribute_1 = "length"
 attribute_2 = "extractiveness"
 test_dataset_path = "../dataset/macdoc/test_dataset.json"
 output_directory = "/scratch/tathagato/test_cascaded_lora_outputs"
-debug = False
+debug = True
+batch_size = 6
 
 #actual dataset config
 test_dataset_size_1 = -1 #-1 for all , 1 denotes for first attribute
 test_dataset_size_2 = -1
 
-
-
-#debug dataset config
+debug = True
 if debug:
-    test_dataset_size_1 = 16
-    test_dataset_size_2 = 16
+    test_dataset_size_1 = 120
+    test_dataset_size_2 = 120
+
+
+
+
+
 
 
 #model config 
@@ -95,10 +99,11 @@ def apply_inference_chat_template(
                                 })
     #remove the assistant part for the inference type
     messages = messages[:-1]
-    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=False)
-    # tokenized_example = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=True, return_tensors="pt")
-    # for key in tokenized_example:
-    #     example[key] = tokenized_example[key]
+    example["messages_for_inference"] = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=False, truncation = True)
+    #tokenized_example = tokenizer.apply_chat_template(messages, add_generation_prompt = True,tokenize=True, return_tensors="pt", truncation = True)
+    tokenized_example = tokenizer(example['messages_for_inference'], add_special_tokens = False, return_tensors="pt", truncation = True, max_length = max_sequence_length)
+    for key in tokenized_example:
+        example[key] = tokenized_example[key]
     return example
 
 # Function to set all seeds for reproducibility
@@ -186,14 +191,36 @@ class CascadedLoRALinear4bit(torch.nn.Module):
         
 
         #self.set_gradients_for_all_layer()
+        if x.dtype != torch.float32:
+            x = x.float()
         if self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
+            print(x.dtype)
+            print(self.base_layer.weight.dtype)
+            print(self.lora_A[self.adapter_name].weight.dtype)
+            print(self.lora_B[self.adapter_name].weight.dtype)
+            print(self.lora_A1[self.adapter_name].weight.dtype)
             #print("first and second both")
             #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) + self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2 @ self.W2_b1 @ self.W2_b2)
             x  = self.base_layer(x) + self.scaling_1 *  self.lora_B[self.adapter_name](self.lora_A[self.adapter_name](x)) + self.scaling_2 * self.lora_B2[self.adapter_name](self.lora_B1[self.adapter_name](self.lora_A2[self.adapter_name](self.lora_A1[self.adapter_name](x))))
         elif self.is_first_layer_being_used_for_inference and not self.is_second_layer_being_used_for_inference:
             #x = self.scaling_2 * (x @ self.W2_a1 @ self.W2_a2) 
             #print("first only")
-            x  =  self.base_layer(x)  + self.scaling_1 * self.lora_B[self.adapter_name](self.lora_A[self.adapter_name](x))
+            
+            # print(self.base_layer.weight.dtype)
+            # print(self.lora_A[self.adapter_name].weight.dtype)
+            # print(self.lora_B[self.adapter_name].weight.dtype)
+            # print(self.lora_A1[self.adapter_name].weight.dtype)
+            # print(x.shape)
+            # print(self.base_layer(x).shape)
+            # print(self.base_layer.weight.shape)
+            # print(self.lora_B[self.adapter_name].weight.shape)
+            # print(self.lora_A[self.adapter_name].weight.shape)
+            # x  =  self.base_layer(x)  
+            # y = self.lora_A[self.adapter_name](x)
+            # print(y.shape)
+            # print("---------------")
+            y = self.base_layer(x)
+            x  = y + self.scaling_1 * self.lora_B[self.adapter_name](self.lora_A[self.adapter_name](x))
 
         elif not self.is_first_layer_being_used_for_inference and self.is_second_layer_being_used_for_inference:
             #x = self.scaling_1 * (x @ self.W1_a @ self.W1_b) 
@@ -203,6 +230,8 @@ class CascadedLoRALinear4bit(torch.nn.Module):
             #print("none")
             x = self.base_layer(x)
         #print(print_gpu_memory_usage())
+        if x.dtype != torch.float16:
+            x = x.half()
         return x
 def set_gradient_for_all_layers(model, base_layer = False, first_adapter_layer = is_first_layer_being_trained, second_adapter_layer = is_second_layar_being_trained):
     #print(base_layer, first_adapter_layer, second_adapter_layer)
@@ -285,6 +314,8 @@ def move_to_device(model, device):
             pass
         
 
+def generate(model, tokenizer, input_text, max_new_tokens = 150, top_k = 50, top_p = 0.95, temperature = 1):
+    input_id = tokenizer(input_text, padding = 'max_length' , max_return_tensors="pt")["input_ids"]
 def create_cascaded_lora_model_from_quantized_model(quantized_model, target_modules = target_modules, device = None):
     if device is None:
         device = torch.device(f"cuda" if torch.cuda.is_available() else "cpu")
@@ -301,6 +332,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_path = os.path.join(checkpoint_directory,args.model_path)
+    print(model_path)
     set_all_seeds(seed = 42)
 
     os.makedirs(output_directory, exist_ok = True)
@@ -313,9 +345,9 @@ if __name__ == "__main__":
     model_kwargs = dict(
         use_cache=False,
         trust_remote_code=True,
-        torch_dtype=torch.float16,
         device_map=f'cuda:0',
         cache_dir = cache_dir,
+        torch_dtype = torch.float16,
         attn_implementation = "eager",
         quantization_config = nf4_config, 
     )
@@ -350,13 +382,6 @@ if __name__ == "__main__":
     test_column_names_1 = []
     test_column_names_2 = []
     #use for generation
-    # processed_test_dataset = test_dataset.map(
-    #     apply_inference_chat_template,
-    #     fn_kwargs={"tokenizer": tokenizer},
-    #     num_proc=10,
-    #     remove_columns=test_column_names,
-    #     desc="Applying chat template to test_sft",
-    # )
     
     processed_test_dataset_1 = test_dataset_1.map(
         apply_inference_chat_template,
@@ -372,16 +397,122 @@ if __name__ == "__main__":
         remove_columns=test_column_names_2,
         desc="Applying chat template to test_sft",
     )
-    print(processed_test_dataset_1[0]['messages_for_inference'])
-    print(processed_test_dataset_1[0].keys())
-    print(len(processed_test_dataset_1['input_ids']))
-    print(tokenizer.decode(processed_test_dataset_1['input_ids'][0]))
+
 
     #filter all examples where input prompt tokenized length is greater than max_sequence_length - max_new_tokens
-    processed_test_dataset_1 = processed_test_dataset_1.filter(lambda x: len(x["messages_for_inference"]) < max_sequence_length - (max_new_tokens + 5))
-    processed_test_dataset_2 = processed_test_dataset_2.filter(lambda x: len(x["messages_for_inference"]) < max_sequence_length - (max_new_tokens + 5))
+    processed_test_dataset_1 = processed_test_dataset_1.filter(lambda x: len(x["input_ids"][0]) < max_sequence_length - (max_new_tokens + 5))
+    processed_test_dataset_2 = processed_test_dataset_2.filter(lambda x: len(x["input_ids"][0]) < max_sequence_length - (max_new_tokens + 5))
 
     #do generate on the first attribute
+    print("after filtering")
+    print("processed_test_dataset_1 size", len(processed_test_dataset_1))
+    print("processed_test_dataset_2 size", len(processed_test_dataset_2))
+
+    #do batching over the dataset 
+    # processed_test_dataset_1.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    # processed_test_dataset_2.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    # processed_test_dataset_1 = DataLoader(processed_test_dataset_1, batch_size = 4, shuffle = False)
+    # processed_test_dataset_2 = DataLoader(processed_test_dataset_2, batch_size = 4, shuffle = False)
+    set_inference_parameters_for_all_layers(model, first_adapter_layer = True, second_adapter_layer = False)
+
+
+    start_time = time.time()
+    first_output_dict = {}
+    second_output_dict = {}
+    model.eval()
+    tokenizer.pad_token = tokenizer.unk_token
+    #https://huggingface.co/docs/transformers/llm_tutorial#wrong-padding-side
+    tokenizer.padding_side = 'left'
+    batch_size = 6
+    with torch.no_grad():
+        texts = []
+        examples = []
+        for index, example in tqdm.tqdm(enumerate(processed_test_dataset_1), desc = 'first attribute inference'):
+            examples.append(example)
+            texts.append(example["messages_for_inference"])
+            if len(texts) == batch_size or index == len(processed_test_dataset_1) - 1:
+                input_ids = tokenizer(texts, padding = 'max_length', max_length = max_sequence_length, return_tensors = "pt").to("cuda")
+                #print(input_ids['input_ids'].shape)
+
+                generation_output = model.generate(input_ids["input_ids"], max_new_tokens = max_new_tokens, num_return_sequences = 1, top_k = top_k, top_p = top_p, temperature = temperature, do_sample = True, return_dict_in_generate = True)
+                decode_output = tokenizer.batch_decode(generation_output["sequences"], skip_special_tokens = True)
+                for i, text in enumerate(texts):
+                    summary = decode_output[i].split("\n")[-1]
+                    cur_index = len(first_output_dict)
+                    first_output_dict[cur_index] = {}
+                    for key in example:
+                        first_output_dict[cur_index][key] = example[key]
+                    first_output_dict[cur_index]["generation_output"] = decode_output[i]
+                    first_output_dict[cur_index]["summary"] = summary
+                texts = []
+                examples = []
+    print("Time taken for inference", time.time() - start_time)
+    with torch.no_grad():
+        texts = []
+        examples = []
+        for index, example in tqdm.tqdm(enumerate(processed_test_dataset_2), desc = 'second attribute inference'):
+            examples.append(example)
+            texts.append(example["messages_for_inference"])
+            if len(texts) == batch_size or index == len(processed_test_dataset_2) - 1:
+                input_ids = tokenizer(texts, padding = 'max_length', max_length = max_sequence_length, return_tensors = "pt").to("cuda")
+                #print(input_ids['input_ids'].shape)
+
+                generation_output = model.generate(input_ids["input_ids"], max_new_tokens = max_new_tokens, num_return_sequences = 1, top_k = top_k, top_p = top_p, temperature = temperature, do_sample = True, return_dict_in_generate = True)
+                decode_output = tokenizer.batch_decode(generation_output["sequences"], skip_special_tokens = True)
+                for i, text in enumerate(texts):
+                    summary = decode_output[i].split("\n")[-1]
+                    cur_index = len(second_output_dict)
+                    second_output_dict[cur_index] = {}
+                    for key in example:
+                        second_output_dict[cur_index][key] = example[key]
+                    second_output_dict[cur_index]["generation_output"] = decode_output[i]
+                    second_output_dict[cur_index]["summary"] = summary
+                texts = []
+                examples = []
+    
+
+    # with torch.no_grad():
+    #     for index, example in tqdm.tqdm(enumerate(processed_test_dataset_1), desc = 'first attribute inference'):
+    #         input_ids = torch.tensor(example["input_ids"]).to(device)
+    #         generation_output = model.generate(input_ids, max_new_tokens = max_new_tokens, num_return_sequences = 1, top_k = top_k, top_p = top_p, temperature = temperature, do_sample = True, return_dict_in_generate = True)
+    #         decode_output = tokenizer.batch_decode(generation_output["sequences"], skip_special_tokens = True)
+    #         summary = decode_output[0].split("\n")[-1]
+    #         print(decode_output)
+    #         print(summary)
+    #         first_output_dict[index] = {}
+    #         for key in example:
+    #             first_output_dict[index][key] = example[key]
+    #         first_output_dict[index]["generation_output"] = decode_output
+    #         first_output_dict[index]["summary"] = summary
+    # print("Time taken for inference", time.time() - start_time)
+
+    # #second attribute inference
+    # set_inference_parameters_for_all_layers(model, first_adapter_layer = True, second_adapter_layer = True)
+    # start_time = time.time()
+    # second_output_dict = {}
+    # model.eval()
+    # with torch.no_grad():
+    #     for index, example in tqdm.tqdm(enumerate(processed_test_dataset_2), desc = 'second attribute inference'):
+    #         input_ids = torch.tensor(example["input_ids"]).to(device)
+    #         generation_output = model.generate(input_ids, max_new_tokens = max_new_tokens, num_return_sequences = 1, top_k = top_k, top_p = top_p, temperature = temperature, do_sample = True, return_dict_in_generate = True)
+    #         decode_output = tokenizer.batch_decode(generation_output["sequences"], skip_special_tokens = True)
+    #         summary = decode_output[0].split("\n")[-1]
+    #         print(decode_output)
+    #         print(summary)
+    #         second_output_dict[index] = {}
+    #         for key in example:
+    #             second_output_dict[index][key] = example[key]
+    #         second_output_dict[index]["generation_output"] = decode_output
+    #         second_output_dict[index]["summary"] = summary
+    # print("Time taken for inference", time.time() - start_time)
+    final_output = {"first attribute": first_output_dict, "second attribute": second_output_dict}
+    print(final_output)
+    with open(os.path.join(output_directory, os.path.basename(args.model_path) + ".json"), "w") as f:
+        json.dump(final_output, f)
+
+
+
+
 
 
     #filter all examples where 
@@ -390,7 +521,6 @@ if __name__ == "__main__":
     #do eval on the first attribute
     
     #print_all_inference_parameters(model)
-    set_inference_parameters_for_all_layers(model, first_adapter_layer = True, second_adapter_layer = True)
     #print_all_inference_parameters(model)
 
     

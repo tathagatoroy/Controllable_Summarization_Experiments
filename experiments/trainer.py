@@ -942,7 +942,7 @@ if __name__ == "__main__":
     model_kwargs = dict(
         use_cache=False,
         trust_remote_code=True,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.float16
         device_map=f'cuda:{ddp_local_rank}',
         cache_dir = cache_dir,
         attn_implementation = "eager",

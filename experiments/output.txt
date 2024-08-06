@@ -1,0 +1,551 @@
+4
+processing file /scratch/tathagato/test_cascaded_lora_outputs/model_second_attribute_after_100_steps.pth.json
+length metrics for first attribute
+control_value normal 54 54
+Prediction Summary Length 62.96296296296296
+Reference Summary Length 39.888888888888886
+Prediction Compression Ratio 0.08305953497598832
+Reference Compression Ratio 0.056931805499302934
+control_value short 24 24
+Prediction Summary Length 56.916666666666664
+Reference Summary Length 16.25
+Prediction Compression Ratio 0.15021361803175923
+Reference Compression Ratio 0.042677701764976324
+control_value long 31 31
+Prediction Summary Length 43.70967741935484
+Reference Summary Length 72.0
+Prediction Compression Ratio 0.09405936425935384
+Reference Compression Ratio 0.13787009430772865
+------------------------------
+control value  normal
+CER 1.3324142234736682
+control value  short
+CER 2.6693804824561407
+control value  long
+CER 0.3956302281920538
+Overall
+CER 1.3603673093621942
+extractiveness metrics for first attribute
+normal 54 54 54
+control_value normal 54 54
+Prediction Density 2.3569846958889196
+Prediction Coverage 0.7199477877785952
+Prediction Overlap 0.3043239157033285
+Reference Density 2.981146867912657
+Reference Coverage 0.8565782842918215
+Reference Overlap 0.42408994535423133
+short 24 24 24
+control_value short 24 24
+Prediction Density 1.1044793894875353
+Prediction Coverage 0.5686584652127381
+Prediction Overlap 0.16299267002071186
+Reference Density 2.218146929824561
+Reference Coverage 0.865734649122807
+Reference Overlap 0.4384920634920633
+long 31 31 31
+control_value long 31 31
+Prediction Density 2.0309136141476145
+Prediction Coverage 0.6773804739890861
+Prediction Overlap 0.28293328964497705
+Reference Density 3.629396469678053
+Reference Coverage 0.8836409256426844
+Reference Overlap 0.5021452250414381
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 1.4634513372187758
+num examples :  54
+prediction F score :  0.2352437962962963
+gold F score :  0.3457750000000001
+control value  short
+cleaning tmp
+cleaning tmp
+Control Error 0.8942472057484684
+num examples :  24
+prediction F score :  0.11444958333333331
+gold F score :  0.32284625000000006
+control value  long
+cleaning tmp
+cleaning tmp
+Control Error 0.5917722638340794
+num examples :  31
+prediction F score :  0.22868887096774196
+gold F score :  0.3939041935483871
+cleaning tmp
+cleaning tmp
+Overall Control Error 1.0902132598773722
+num examples :  109
+prediction F score :  0.2067826605504587
+gold F score :  0.35441458715596336
+length metrics for second attribute
+control_value normal 97 97
+Prediction Summary Length 53.01030927835052
+Reference Summary Length 45.402061855670105
+Prediction Compression Ratio 0.09451827009200837
+Reference Compression Ratio 0.08141573998012759
+control_value fully 12 12
+Prediction Summary Length 43.416666666666664
+Reference Summary Length 31.0
+Prediction Compression Ratio 0.05068643783197119
+Reference Compression Ratio 0.0396023737324172
+------------------------------
+control value  normal
+CER 1.0045626886155896
+control value  fully
+CER 0.9017730496453903
+Overall
+CER 0.9932463980867601
+extractiveness metrics for second attribute
+normal 97 97 97
+control_value normal 97 97
+Prediction Density 2.1117968194087524
+Prediction Coverage 0.6736348981550193
+Prediction Overlap 0.2591866773018079
+Reference Density 2.8026872436774157
+Reference Coverage 0.8536980035982799
+Reference Overlap 0.4264185270170221
+fully 12 12 12
+control_value fully 12 12
+Prediction Density 2.630981587551204
+Prediction Coverage 0.7901964223435115
+Prediction Overlap 0.3756958647583648
+Reference Density 4.572340425531916
+Reference Coverage 0.9680851063829788
+Reference Overlap 0.6357142857142858
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 1.0441954226346863
+num examples :  97
+prediction F score :  0.19668484536082487
+gold F score :  0.32336577319587656
+control value  fully
+cleaning tmp
+cleaning tmp
+Control Error 0.5186047986274235
+num examples :  12
+prediction F score :  0.3032241666666667
+gold F score :  0.6053924999999999
+cleaning tmp
+cleaning tmp
+Overall Control Error 0.9863322346705838
+num examples :  109
+prediction F score :  0.20841394495412852
+gold F score :  0.35441458715596336
+
+---------------------------------------------------------
+
+processing file /scratch/tathagato/test_cascaded_lora_outputs/raw_model.pth.json
+length metrics for first attribute
+control_value normal 54 54
+Prediction Summary Length 165.57407407407408
+Reference Summary Length 39.888888888888886
+Prediction Compression Ratio 0.2410254263531884
+Reference Compression Ratio 0.056931805499302934
+control_value short 24 24
+Prediction Summary Length 175.95833333333334
+Reference Summary Length 16.25
+Prediction Compression Ratio 0.43920039027602636
+Reference Compression Ratio 0.042677701764976324
+control_value long 31 31
+Prediction Summary Length 175.67741935483872
+Reference Summary Length 72.0
+Prediction Compression Ratio 0.39163200172852447
+Reference Compression Ratio 0.13787009430772865
+------------------------------
+control value  normal
+CER 4.060788651870768
+control value  short
+CER 10.112052266081871
+control value  long
+CER 2.0739511751251007
+Overall
+CER 4.828113101062975
+extractiveness metrics for first attribute
+normal 54 54 54
+control_value normal 54 54
+Prediction Density 2.1525213646261427
+Prediction Coverage 0.7020403696283245
+Prediction Overlap 0.2644672149357907
+Reference Density 2.981146867912657
+Reference Coverage 0.8565782842918215
+Reference Overlap 0.42408994535423133
+short 24 24 24
+control_value short 24 24
+Prediction Density 1.5714943495743843
+Prediction Coverage 0.5725329082317877
+Prediction Overlap 0.17708231190874058
+Reference Density 2.218146929824561
+Reference Coverage 0.865734649122807
+Reference Overlap 0.4384920634920633
+long 31 31 31
+control_value long 31 31
+Prediction Density 1.8229577395395469
+Prediction Coverage 0.658394091404468
+Prediction Overlap 0.22023618918420784
+Reference Density 3.629396469678053
+Reference Coverage 0.8836409256426844
+Reference Overlap 0.5021452250414381
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 0.8578841409999045
+num examples :  54
+prediction F score :  0.19353499999999996
+gold F score :  0.3457750000000001
+control value  short
+cleaning tmp
+cleaning tmp
+Control Error 0.9017497929938476
+num examples :  24
+prediction F score :  0.12674083333333333
+gold F score :  0.32284625000000006
+control value  long
+cleaning tmp
+cleaning tmp
+Control Error 0.5875463333729897
+num examples :  31
+prediction F score :  0.17514354838709675
+gold F score :  0.3939041935483871
+cleaning tmp
+cleaning tmp
+Overall Control Error 0.7906575686276133
+num examples :  109
+prediction F score :  0.1735974311926605
+gold F score :  0.35441458715596336
+length metrics for second attribute
+control_value normal 97 97
+Prediction Summary Length 166.0
+Reference Summary Length 45.402061855670105
+Prediction Compression Ratio 0.32169518467368385
+Reference Compression Ratio 0.08141573998012759
+control_value fully 12 12
+Prediction Summary Length 193.75
+Reference Summary Length 31.0
+Prediction Compression Ratio 0.2244533073615768
+Reference Compression Ratio 0.0396023737324172
+------------------------------
+control value  normal
+CER 4.437980397752366
+control value  fully
+CER 7.275531914893616
+Overall
+CER 4.750371390465164
+extractiveness metrics for second attribute
+normal 97 97 97
+control_value normal 97 97
+Prediction Density 1.7000787252452878
+Prediction Coverage 0.6448284641807155
+Prediction Overlap 0.21973885784241315
+Reference Density 2.8026872436774157
+Reference Coverage 0.8536980035982799
+Reference Overlap 0.4264185270170221
+fully 12 12 12
+control_value fully 12 12
+Prediction Density 2.157994546726193
+Prediction Coverage 0.7589118314016456
+Prediction Overlap 0.2860971172965531
+Reference Density 4.572340425531916
+Reference Coverage 0.9680851063829788
+Reference Overlap 0.6357142857142858
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 0.9361765267245492
+num examples :  97
+prediction F score :  0.16127974226804118
+gold F score :  0.32336577319587656
+control value  fully
+cleaning tmp
+cleaning tmp
+Control Error 0.6683071430040175
+num examples :  12
+prediction F score :  0.20581833333333333
+gold F score :  0.6053924999999999
+cleaning tmp
+cleaning tmp
+Overall Control Error 0.9066863193424726
+num examples :  109
+prediction F score :  0.16618307339449542
+gold F score :  0.35441458715596336
+
+---------------------------------------------------------
+
+processing file /scratch/tathagato/test_cascaded_lora_outputs/model_first_attribute_after_300_steps.pth.json
+length metrics for first attribute
+control_value normal 54 54
+Prediction Summary Length 53.53703703703704
+Reference Summary Length 39.888888888888886
+Prediction Compression Ratio 0.06984491819069888
+Reference Compression Ratio 0.056931805499302934
+control_value short 24 24
+Prediction Summary Length 54.958333333333336
+Reference Summary Length 16.25
+Prediction Compression Ratio 0.1335095218055042
+Reference Compression Ratio 0.042677701764976324
+control_value long 31 31
+Prediction Summary Length 51.25806451612903
+Reference Summary Length 72.0
+Prediction Compression Ratio 0.12212131110898759
+Reference Compression Ratio 0.13787009430772865
+------------------------------
+control value  normal
+CER 1.0560656354037217
+control value  short
+CER 2.552631578947369
+control value  long
+CER 0.63830833463595
+Overall
+CER 1.266773032846351
+extractiveness metrics for first attribute
+normal 54 54 54
+control_value normal 54 54
+Prediction Density 4.3822822927800065
+Prediction Coverage 0.7430755040793386
+Prediction Overlap 0.34750365942771616
+Reference Density 2.981146867912657
+Reference Coverage 0.8565782842918215
+Reference Overlap 0.42408994535423133
+short 24 24 24
+control_value short 24 24
+Prediction Density 1.4162631273539983
+Prediction Coverage 0.575289842965386
+Prediction Overlap 0.21207998151165294
+Reference Density 2.218146929824561
+Reference Coverage 0.865734649122807
+Reference Overlap 0.4384920634920633
+long 31 31 31
+control_value long 31 31
+Prediction Density 2.0868024463156765
+Prediction Coverage 0.7125606495806039
+Prediction Overlap 0.27776201399257716
+Reference Density 3.629396469678053
+Reference Coverage 0.8836409256426844
+Reference Overlap 0.5021452250414381
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 1.75302082170077
+num examples :  54
+prediction F score :  0.27429055555555565
+gold F score :  0.3457750000000001
+control value  short
+cleaning tmp
+cleaning tmp
+Control Error 0.856063904999341
+num examples :  24
+prediction F score :  0.14198479166666664
+gold F score :  0.32284625000000006
+control value  long
+cleaning tmp
+cleaning tmp
+Control Error 0.7283789163500147
+num examples :  31
+prediction F score :  0.2128309677419355
+gold F score :  0.3939041935483871
+cleaning tmp
+cleaning tmp
+Overall Control Error 1.2641138027401488
+num examples :  109
+prediction F score :  0.2276796788990825
+gold F score :  0.35441458715596336
+length metrics for second attribute
+control_value normal 97 97
+Prediction Summary Length 49.76288659793814
+Reference Summary Length 45.402061855670105
+Prediction Compression Ratio 0.08932474192178695
+Reference Compression Ratio 0.08141573998012759
+control_value fully 12 12
+Prediction Summary Length 73.83333333333333
+Reference Summary Length 31.0
+Prediction Compression Ratio 0.08572398134770724
+Reference Compression Ratio 0.0396023737324172
+------------------------------
+control value  normal
+CER 0.7803895758035151
+control value  fully
+CER 2.289361702127659
+Overall
+CER 0.9465149475089257
+extractiveness metrics for second attribute
+normal 97 97 97
+control_value normal 97 97
+Prediction Density 2.131652756844905
+Prediction Coverage 0.6765427912826726
+Prediction Overlap 0.23753852359253336
+Reference Density 2.8026872436774157
+Reference Coverage 0.8536980035982799
+Reference Overlap 0.4264185270170221
+fully 12 12 12
+control_value fully 12 12
+Prediction Density 4.343183096519419
+Prediction Coverage 0.824867943906376
+Prediction Overlap 0.42733753874636865
+Reference Density 4.572340425531916
+Reference Coverage 0.9680851063829788
+Reference Overlap 0.6357142857142858
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 1.1838913222884666
+num examples :  97
+prediction F score :  0.18277206185567013
+gold F score :  0.32336577319587656
+control value  fully
+cleaning tmp
+cleaning tmp
+Control Error 0.525354529419641
+num examples :  12
+prediction F score :  0.36182333333333333
+gold F score :  0.6053924999999999
+cleaning tmp
+cleaning tmp
+Overall Control Error 1.1113918588533664
+num examples :  109
+prediction F score :  0.20248412844036692
+gold F score :  0.35441458715596336
+
+---------------------------------------------------------
+
+processing file /scratch/tathagato/test_cascaded_lora_outputs/model_first_attribute_after_100_steps.pth.json
+length metrics for first attribute
+control_value normal 54 54
+Prediction Summary Length 47.03703703703704
+Reference Summary Length 39.888888888888886
+Prediction Compression Ratio 0.06449663927280672
+Reference Compression Ratio 0.056931805499302934
+control_value short 24 24
+Prediction Summary Length 46.416666666666664
+Reference Summary Length 16.25
+Prediction Compression Ratio 0.09983887341744586
+Reference Compression Ratio 0.042677701764976324
+control_value long 31 31
+Prediction Summary Length 66.96774193548387
+Reference Summary Length 72.0
+Prediction Compression Ratio 0.1368104878227168
+Reference Compression Ratio 0.13787009430772865
+------------------------------
+control value  normal
+CER 0.7937374411674308
+control value  short
+CER 1.9864857456140348
+control value  long
+CER 0.5405938200568666
+Overall
+CER 0.9843659462343206
+extractiveness metrics for first attribute
+normal 54 54 54
+control_value normal 54 54
+Prediction Density 2.1915488053228374
+Prediction Coverage 0.7363778980652882
+Prediction Overlap 0.3049269965714341
+Reference Density 2.981146867912657
+Reference Coverage 0.8565782842918215
+Reference Overlap 0.42408994535423133
+short 24 24 24
+control_value short 24 24
+Prediction Density 1.6249353363172698
+Prediction Coverage 0.5708938339709148
+Prediction Overlap 0.17769423391008943
+Reference Density 2.218146929824561
+Reference Coverage 0.865734649122807
+Reference Overlap 0.4384920634920633
+long 31 31 31
+control_value long 31 31
+Prediction Density 2.0601955426911815
+Prediction Coverage 0.6849193844184127
+Prediction Overlap 0.25452600872557074
+Reference Density 3.629396469678053
+Reference Coverage 0.8836409256426844
+Reference Overlap 0.5021452250414381
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 1.1720806708154892
+num examples :  54
+prediction F score :  0.2434988888888889
+gold F score :  0.3457750000000001
+control value  short
+cleaning tmp
+cleaning tmp
+Control Error 1.0566513537419369
+num examples :  24
+prediction F score :  0.13449999999999998
+gold F score :  0.32284625000000006
+control value  long
+cleaning tmp
+cleaning tmp
+Control Error 0.6282352805409813
+num examples :  31
+prediction F score :  0.1988604838709678
+gold F score :  0.3939041935483871
+cleaning tmp
+cleaning tmp
+Overall Control Error 0.9919934166111314
+num examples :  109
+prediction F score :  0.20680380733944953
+gold F score :  0.35441458715596336
+length metrics for second attribute
+control_value normal 97 97
+Prediction Summary Length 39.65979381443299
+Reference Summary Length 45.402061855670105
+Prediction Compression Ratio 0.07128642363841314
+Reference Compression Ratio 0.08141573998012759
+control_value fully 12 12
+Prediction Summary Length 51.416666666666664
+Reference Summary Length 31.0
+Prediction Compression Ratio 0.055619083940700566
+Reference Compression Ratio 0.0396023737324172
+------------------------------
+control value  normal
+CER 0.7563438609097789
+control value  fully
+CER 1.8192671394799051
+Overall
+CER 0.8733629374496098
+extractiveness metrics for second attribute
+normal 97 97 97
+fragment density sumary_tokens is zero
+(CNN)Lady Antebellum singer Hillary Scott's tour bus caught fire on a Texas freeway Thursday morning, but everyone on board was safely evacuated. Michael Barnett captured dramatic video of the fire, on Interstate 30 just northeast of Dallas, and uploaded it to CNN iReport. Smoke and flames poured from the rear of the bus as traffic slowed to a crawl and Barnett slowly approached in his vehicle. As he drew closer to the bus, Barnett decided to stop filming because he didn't know what to expect. "It was shocking," he said. "I didn't know what I was about to see. I didn't know if anyone was hurt." Barnett said he didn't realize at the time that the bus belonged to the country band. Hillary Scott, co-lead singer for the band, posted a photo of the charred bus on Instagram and noted that she, her husband, the tour manager and the driver were all evacuated safely. "Thanking God for our safety and the safety of all of those who helped put this fire out and keep us safe," she wrote. The tour manager told CNN affiliate KTVT that the bus stopped after a rear tire blew out. It burst into flames after everyone had gotten off. Scott also posted an Instagram photo and message saying that the fire destroyed everything in the bus's back lounge except her Bible. The band's two other members, Charles Kelley and Dave Haywood, were not traveling on the bus, KTVT reported. Lady Antebellum is set to perform at the 50th Academy of Country Music Awards on Sunday in Arlington, Texas.
+
+sumary_tokens is zero
+(CNN)Lady Antebellum singer Hillary Scott's tour bus caught fire on a Texas freeway Thursday morning, but everyone on board was safely evacuated. Michael Barnett captured dramatic video of the fire, on Interstate 30 just northeast of Dallas, and uploaded it to CNN iReport. Smoke and flames poured from the rear of the bus as traffic slowed to a crawl and Barnett slowly approached in his vehicle. As he drew closer to the bus, Barnett decided to stop filming because he didn't know what to expect. "It was shocking," he said. "I didn't know what I was about to see. I didn't know if anyone was hurt." Barnett said he didn't realize at the time that the bus belonged to the country band. Hillary Scott, co-lead singer for the band, posted a photo of the charred bus on Instagram and noted that she, her husband, the tour manager and the driver were all evacuated safely. "Thanking God for our safety and the safety of all of those who helped put this fire out and keep us safe," she wrote. The tour manager told CNN affiliate KTVT that the bus stopped after a rear tire blew out. It burst into flames after everyone had gotten off. Scott also posted an Instagram photo and message saying that the fire destroyed everything in the bus's back lounge except her Bible. The band's two other members, Charles Kelley and Dave Haywood, were not traveling on the bus, KTVT reported. Lady Antebellum is set to perform at the 50th Academy of Country Music Awards on Sunday in Arlington, Texas.
+
+control_value normal 97 97
+Prediction Density 1.7294649828846913
+Prediction Coverage 0.664890077807332
+Prediction Overlap 0.23143945540524033
+Reference Density 2.8026872436774157
+Reference Coverage 0.8536980035982799
+Reference Overlap 0.4264185270170221
+fully 12 12 12
+control_value fully 12 12
+Prediction Density 2.420562821827882
+Prediction Coverage 0.7714762658136153
+Prediction Overlap 0.32526186664619683
+Reference Density 4.572340425531916
+Reference Coverage 0.9680851063829788
+Reference Overlap 0.6357142857142858
+control value  normal
+cleaning tmp
+cleaning tmp
+Control Error 1.0588661625080797
+num examples :  97
+prediction F score :  0.17362634020618556
+gold F score :  0.32336577319587656
+control value  fully
+cleaning tmp
+cleaning tmp
+Control Error 0.5842370451800553
+num examples :  12
+prediction F score :  0.25312874999999996
+gold F score :  0.6053924999999999
+cleaning tmp
+cleaning tmp
+Overall Control Error 1.006613415646279
+num examples :  109
+prediction F score :  0.18237889908256877
+gold F score :  0.35441458715596336
+
+---------------------------------------------------------
+

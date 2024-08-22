@@ -45,10 +45,10 @@ def main(args):
         output = model.generate(**new_item, do_sample=args.do_sample, top_p=args.top_p, top_k=args.top_k, max_new_tokens=args.max_new_tokens, num_return_sequences=args.num_return_sequences)
         decoded_text = tokenizer.decode(output[0], skip_special_tokens=True)
         just_summary = decoded_text.split("Response:")[-1].strip("\n")
-        print(just_summary)
-        print("------------------")
-        print(decoded_text)
-        print("====================================")
+        #print(just_summary)
+        #print("------------------")
+        #print(decoded_text)
+        #print("====================================")
         input_text = decoded_text.split("Response:")[0]
         result_dict[index] = {'input': input_text, 'summary': just_summary, 'reference': item['reference'], 'generated_text' : decoded_text}
     # Save the result_dict
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument('--do_sample', type=bool, default=True, help="Whether to sample during text generation.")
     parser.add_argument('--top_p', type=float, default=0.95, help="Top-p for nucleus sampling.")
     parser.add_argument('--top_k', type=int, default=50, help="Top-k for top-k sampling.")
-    parser.add_argument('--max_new_tokens', type=int, default=200, help="Maximum number of new tokens to generate.")
+    parser.add_argument('--max_new_tokens', type=int, default=300, help="Maximum number of new tokens to generate.")
     parser.add_argument('--num_return_sequences', type=int, default=1, help="Number of sequences to return during generation.")
     parser.add_argument('--debug', action='store_true', help="Enable interactive debugging session after script execution.")
 

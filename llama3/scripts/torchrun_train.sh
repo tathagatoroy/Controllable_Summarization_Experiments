@@ -1,8 +1,8 @@
 #!/bin/bash 
 cd /home2/tathagato/summarization/MACSUM/llama3
-torchrun  train.py \
+torchrun  --nproc_per_node=4 train.py \
 --seed 100 \
---model_name_or_path "meta-llama/Meta-Llama-3.1-8B" \
+--model_name_or_path "meta-llama/Meta-Llama-3.1-8B-Instruct" \
 --dataset_name "smangrul/ultrachat-10k-chatml" \
 --chat_template_format "chatml" \
 --add_special_tokens False \
@@ -15,9 +15,6 @@ torchrun  train.py \
 --logging_strategy "steps" \
 --evaluation_strategy "epoch" \
 --save_strategy "epoch" \
---push_to_hub \
---hub_private_repo True \
---hub_strategy "every_save" \
 --bf16 True \
 --packing False \
 --learning_rate 1e-4 \
@@ -32,7 +29,7 @@ torchrun  train.py \
 --gradient_checkpointing True \
 --use_reentrant True \
 --dataset_text_field "content" \
---use_flash_attn True \
+--use_flash_attn False \
 --use_peft_lora True \
 --lora_r 8 \
 --lora_alpha 16 \

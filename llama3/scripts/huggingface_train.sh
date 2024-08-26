@@ -2,7 +2,7 @@
 cd /home2/tathagato/summarization/MACSUM/llama3
 accelerate launch --config_file "configs/fsdp_config_qlora.yaml"  train.py \
 --seed 100 \
---model_name_or_path "meta-llama/Meta-Llama-3.1-8B" \
+--model_name_or_path "meta-llama/Meta-Llama-3.1-8B-Instruct" \
 --dataset_name "smangrul/ultrachat-10k-chatml" \
 --chat_template_format "chatml" \
 --add_special_tokens False \

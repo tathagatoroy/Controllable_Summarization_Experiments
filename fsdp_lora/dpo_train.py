@@ -375,10 +375,7 @@ def get_dataloader(tokenizer:PreTrainedTokenizerFast, args:Dict):
         dataset = dataset.select(range(0,args['dataset_samples']))
     
     elif args['dataset'] == "macsum":
-        model_name = "llama31"
-        if "mistral" in args['model_name']:
-            model_name = "mistral"
-        dataset = MACSUM(args['macsum_path'], args['attribute'], tokenizer, mode = 'train', size = args['dataset_samples'], model_type= model_name)
+        dataset = MACSUM(args['macsum_path'], args['attribute'], tokenizer, mode = 'train', size = args['dataset_samples'])
 
 
     # truncate dataset so it's evenly divisible by grad_accumulation_steps
@@ -576,7 +573,6 @@ def fsdp_main(local_rank:int, world_size:int, args:Dict):
         print("Example labels shape: ", example['labels'].shape)
         print("example input ")
         print(tokenizer.decode(example['input_ids'][0]))
-        print(example['labels'])
 
 
 
@@ -855,183 +851,177 @@ def fsdp_main(local_rank:int, world_size:int, args:Dict):
     log_loss, log_lr = 0.0, -1
     # Reset peak memory to track that
     torch.cuda.reset_peak_memory_stats(local_rank)
-    with torch.autograd.detect_anomaly():
+    with profiling_context(args, rank=rank) as prof:
+        for epoch in range(args['num_epochs']):
+            update_progress_bar(progress_bar, epoch, log_loss, log_lr, rank)
+            model.train()
+            ddp_loss = torch.zeros(2).to(local_rank)
 
-        with profiling_context(args, rank=rank) as prof:
-            for epoch in range(args['num_epochs']):
-                update_progress_bar(progress_bar, epoch, log_loss, log_lr, rank)
-                model.train()
-                ddp_loss = torch.zeros(2).to(local_rank)
+            for batch_idx, batch in enumerate(dataloader):
 
-                for batch_idx, batch in enumerate(dataloader):
+                accumulate_grads = (batch_idx+1) % gradient_accumulation_steps == 0
 
-                    accumulate_grads = (batch_idx+1) % gradient_accumulation_steps == 0
+                # Prevent gradient syncing until update step if using no_sync option.
+                # Documentation states this should only be used on the root FSDP instance
+                # We assume this is a one-node setup
+                if args['no_sync'] and not accumulate_grads:
+                    sync_context = model.no_sync()
+                else:
+                    sync_context = nullcontext()
 
-                    # Prevent gradient syncing until update step if using no_sync option.
-                    # Documentation states this should only be used on the root FSDP instance
-                    # We assume this is a one-node setup
-                    if args['no_sync'] and not accumulate_grads:
-                        sync_context = model.no_sync()
-                    else:
-                        sync_context = nullcontext()
+                # Start logging memory (first iter) if requested
+                if args['profile_memory'] and batch_idx==0 and rank == 0 and epoch == 0:
+                    torch.cuda.memory._record_memory_history()
 
-                    # Start logging memory (first iter) if requested
-                    if args['profile_memory'] and batch_idx==0 and rank == 0 and epoch == 0:
-                        torch.cuda.memory._record_memory_history()
+                # Log memory usage
+                if batch_idx == 0 and epoch == 0 and (rank == 0 or args['verbose']):
+                    reserved_before_forward = torch.cuda.memory_reserved(local_rank)
+                    memory_stats.append(f"Rank {rank}: Before forward: {reserved_before_forward/2**30:.2f} GiB")
+                    if args["log_to"] == 'wandb':
+                        logger.log({"memory/allocated_before_forward": torch.cuda.memory_allocated(local_rank)}, rank)
+                        logger.log({"memory/reserved_before_forward": reserved_before_forward}, rank)
+
+                # Forward pass
+                with sync_context:
+                    with autocast:
+                        output = model(
+                            batch['input_ids'].to(local_rank),
+                            labels=batch['labels'].to(local_rank),
+                            attention_mask=None,
+                        )
+                        loss = output.loss
+
+                    # Scale loss for gradient accumulation
+                    loss = loss / gradient_accumulation_steps
 
                     # Log memory usage
                     if batch_idx == 0 and epoch == 0 and (rank == 0 or args['verbose']):
-                        reserved_before_forward = torch.cuda.memory_reserved(local_rank)
-                        memory_stats.append(f"Rank {rank}: Before forward: {reserved_before_forward/2**30:.2f} GiB")
+                        reserved_after_forward = torch.cuda.memory_reserved(local_rank)
+                        memory_stats.append(f"Rank {rank}: After forward: {reserved_after_forward/2**30:.2f} GiB")
                         if args["log_to"] == 'wandb':
-                            logger.log({"memory/allocated_before_forward": torch.cuda.memory_allocated(local_rank)}, rank)
-                            logger.log({"memory/reserved_before_forward": reserved_before_forward}, rank)
+                            logger.log({"memory/allocated_after_forward": torch.cuda.memory_allocated(local_rank)}, rank)
+                            logger.log({"memory/reserved_after_forward": reserved_after_forward}, rank)
 
-                    # Forward pass
-                    with sync_context:
-                        with autocast:
-                            output = model(
-                                batch['input_ids'].to(local_rank),
-                                labels=batch['labels'].to(local_rank),
-                                attention_mask=None,
-                            )
-                            loss = output.loss
-
-                        # Scale loss for gradient accumulation
-                        loss = loss / gradient_accumulation_steps
-
-                        # Log memory usage
-                        if batch_idx == 0 and epoch == 0 and (rank == 0 or args['verbose']):
-                            reserved_after_forward = torch.cuda.memory_reserved(local_rank)
-                            memory_stats.append(f"Rank {rank}: After forward: {reserved_after_forward/2**30:.2f} GiB")
-                            if args["log_to"] == 'wandb':
-                                logger.log({"memory/allocated_after_forward": torch.cuda.memory_allocated(local_rank)}, rank)
-                                logger.log({"memory/reserved_after_forward": reserved_after_forward}, rank)
-
-                        # Backward pass
-                        if scale_grads:
-                            scaler.scale(loss).backward()
-                        else:
-                            loss.backward()
-
-                    # Record loss
-                    bs = batch['input_ids'].shape[0]
-                    ddp_loss[0] += loss.item() * bs * gradient_accumulation_steps
-                    ddp_loss[1] += bs
-
-                    # Step the optimizer (w/ gradient accumulation)
-                    if accumulate_grads:
-                        if args['apply_gradient_clipping'] and (args['grad_norm'] is not None):
-                            current_norm = model.clip_grad_norm_(args['grad_norm'], norm_type=2.0)
-                            if rank == 0 and args['verbose']:
-                                print(f"Gradient norm: {current_norm}")
-                            if args["log_to"] == 'wandb':
-                                logger.log({"grad_norm": current_norm}, rank)
-                        if scale_grads:
-                            scaler.step(optimizer)
-                            scaler.update()
-                        else:
-                            optimizer.step()
-                        optimizer.zero_grad()
-                        # avoid overhead when lr is constant.
-                        if lr_scheduler is not None:
-                            lr_scheduler.step()
-                        progress_bar.update(1)
-
-                    # Log memory usage after backward
-                    if batch_idx == 0 and epoch == 0 and (rank == 0 or args['verbose']):
-                        reserved_after_backward = torch.cuda.memory_reserved(local_rank)
-                        memory_stats.append(f"Rank {rank}: After backward: {reserved_after_backward/2**30:.2f} GiB")
-                        if args["log_to"] == 'wandb':
-                            logger.log({"memory/allocated_after_backward": torch.cuda.memory_allocated(local_rank)}, rank)
-                            logger.log({"memory/reserved_after_backward": reserved_after_backward}, rank)
-
-                    # Delete the output so more memory frees up before the next forward pass
-                    output = None
-                    loss = None
-
-                    # Stop logging memory (first iter)
-                    if args['profile_memory'] and batch_idx==0 and rank == 0 and epoch == 0:
-                        torch.cuda.memory._dump_snapshot("memory_snapshot.pickle")
-                        torch.cuda.memory._record_memory_history(enabled=None) # Stop recording
-
-                    # Log loss every gradient update steps
-                    if accumulate_grads:
-                        dist.all_reduce(ddp_loss, op=dist.ReduceOp.SUM)
-                        if rank == 0:
-                            log_loss = ddp_loss[0] / ddp_loss[1]
-                            if lr_scheduler is not None:
-                                log_lr = lr_scheduler.get_last_lr()[0]
-                            else:
-                                log_lr = args["lr"]
-                            update_progress_bar(progress_bar, epoch, log_loss, log_lr, rank)
-                            if args["log_to"] == 'wandb':
-                                logger.log({"loss": log_loss, "lr": log_lr}, rank)
-                        ddp_loss = torch.zeros(2).to(local_rank)
-
-                    if rank == 0 and args['verbose']:
-                        print(f"Batch idx {batch_idx}")
-
-                    prof.step()
-
-                    #Primarily for debugging
-                    if args["max_steps"] > 0 and batch_idx > args["max_steps"]:
-                        if rank == 0:
-                            print("Max steps reached, skipping rest of epoch")
-                        break
-
-                # Print + log peak memory usage for the whole fourth step of training
-                if epoch == 0 and (rank == 0 or args['verbose']):
-                    peak_allocated_memory = torch.cuda.max_memory_allocated(local_rank)
-                    peak_reserved_memory  = torch.cuda.max_memory_reserved(local_rank)
-                    memory_stats.append(f"Rank {rank}: Peak allocated memory: {peak_allocated_memory/2**30:.2f} GiB")
-                    memory_stats.append(f"Rank {rank}: Peak reserved memory:  {peak_reserved_memory/2**30:.2f} GiB")
-                    if args["log_to"] == 'wandb':
-                        logger.log({"memory/allocated_peak": peak_allocated_memory}, rank)
-                        logger.log({"memory/reserved_peak": peak_reserved_memory}, rank)
-                
-                # Save model - ref: https://github.com/pytorch/pytorch/issues/98823
-                # HQQLinear custom state_dict() method causes issues when saving.
-                # Model is saved fine when `state_dict()` method is removed.
-                # Non param/buffer types are not saved with FSDP.
-                # It might be better to just save the trained lora layers.
-                # summon_full_params on lora layers and save.
-                if args["save_model"]:
-                    if rank == 0:
-                        os.makedirs(args["output_dir"], exist_ok=True)
-                    dist.barrier()
-                    save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
-                    if args["train_type"] in ["custom_lora", "custom_qlora", "hqq_lora", "hqq_dora", "bnb_dora", "bnb_llama_pro", "hqq_llama_pro"]:
-                        cpu_state_dict = {}
-                        if args["train_type"] in ["bnb_llama_pro", "hqq_llama_pro"]:
-                            trainable_fsdp_modules =[(n,m) for n,m in model.named_modules() if n.endswith(tuple(new_layer_names))]
-                        else:
-                            trainable_fsdp_modules = [(n,m) for n,m in model.named_modules() if n.endswith(('lora_AB', 'dora_layer', 'magnitude_layer'))]
-                        for prefix, module in trainable_fsdp_modules:
-                            prefix = (prefix.replace("_fsdp_wrapped_module.", "")
-                                            .replace("_checkpoint_wrapped_module.", "")
-                                            .replace("_offload_wrapped_module.", ""))
-                            if args['verbose']: print(f"Saving {prefix}")
-                            with FSDP.state_dict_type(module, StateDictType.FULL_STATE_DICT, save_policy):
-                                cpu_state_dict = {**cpu_state_dict, **{f"{prefix}.{k}":v for k,v in module.state_dict().items()}}
-                            dist.barrier()
-                            torch.cuda.synchronize()
-                        if rank==0:
-                            print("Saving trained LoRA weights.")
-                            save_file(cpu_state_dict, os.path.join(args["output_dir"], "model_state_dict.safetensors"))
-                            print("Done", rank)
+                    # Backward pass
+                    if scale_grads:
+                        scaler.scale(loss).backward()
                     else:
-                        with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
-                            cpu_state_dict = model.state_dict()
-                            if rank==0:
-                                print("Saving full model weights.")
-                                save_file(cpu_state_dict, os.path.join(args["output_dir"], f"model_state_dict_{epoch}.safetensors"))
-                                print("Done", rank)
+                        loss.backward()
 
-        # Synchronize at the end and record time
-        init_end_event.record()
-        dist.barrier()
-        torch.cuda.synchronize()
+                # Record loss
+                bs = batch['input_ids'].shape[0]
+                ddp_loss[0] += loss.item() * bs * gradient_accumulation_steps
+                ddp_loss[1] += bs
+
+                # Step the optimizer (w/ gradient accumulation)
+                if accumulate_grads:
+                    if args['apply_gradient_clipping'] and (args['grad_norm'] is not None):
+                        model.clip_grad_norm_(args['grad_norm'], norm_type=2.0)
+                    if scale_grads:
+                        scaler.step(optimizer)
+                        scaler.update()
+                    else:
+                        optimizer.step()
+                    optimizer.zero_grad()
+                    # avoid overhead when lr is constant.
+                    if lr_scheduler is not None:
+                        lr_scheduler.step()
+                    progress_bar.update(1)
+
+                # Log memory usage after backward
+                if batch_idx == 0 and epoch == 0 and (rank == 0 or args['verbose']):
+                    reserved_after_backward = torch.cuda.memory_reserved(local_rank)
+                    memory_stats.append(f"Rank {rank}: After backward: {reserved_after_backward/2**30:.2f} GiB")
+                    if args["log_to"] == 'wandb':
+                        logger.log({"memory/allocated_after_backward": torch.cuda.memory_allocated(local_rank)}, rank)
+                        logger.log({"memory/reserved_after_backward": reserved_after_backward}, rank)
+
+                # Delete the output so more memory frees up before the next forward pass
+                output = None
+                loss = None
+
+                # Stop logging memory (first iter)
+                if args['profile_memory'] and batch_idx==0 and rank == 0 and epoch == 0:
+                    torch.cuda.memory._dump_snapshot("memory_snapshot.pickle")
+                    torch.cuda.memory._record_memory_history(enabled=None) # Stop recording
+
+                # Log loss every gradient update steps
+                if accumulate_grads:
+                    dist.all_reduce(ddp_loss, op=dist.ReduceOp.SUM)
+                    if rank == 0:
+                        log_loss = ddp_loss[0] / ddp_loss[1]
+                        if lr_scheduler is not None:
+                            log_lr = lr_scheduler.get_last_lr()[0]
+                        else:
+                            log_lr = args["lr"]
+                        update_progress_bar(progress_bar, epoch, log_loss, log_lr, rank)
+                        if args["log_to"] == 'wandb':
+                            logger.log({"loss": log_loss, "lr": log_lr}, rank)
+                    ddp_loss = torch.zeros(2).to(local_rank)
+
+                if rank == 0 and args['verbose']:
+                    print(f"Batch idx {batch_idx}")
+
+                prof.step()
+
+                #Primarily for debugging
+                if args["max_steps"] > 0 and batch_idx > args["max_steps"]:
+                    if rank == 0:
+                        print("Max steps reached, skipping rest of epoch")
+                    break
+
+            # Print + log peak memory usage for the whole fourth step of training
+            if epoch == 0 and (rank == 0 or args['verbose']):
+                peak_allocated_memory = torch.cuda.max_memory_allocated(local_rank)
+                peak_reserved_memory  = torch.cuda.max_memory_reserved(local_rank)
+                memory_stats.append(f"Rank {rank}: Peak allocated memory: {peak_allocated_memory/2**30:.2f} GiB")
+                memory_stats.append(f"Rank {rank}: Peak reserved memory:  {peak_reserved_memory/2**30:.2f} GiB")
+                if args["log_to"] == 'wandb':
+                    logger.log({"memory/allocated_peak": peak_allocated_memory}, rank)
+                    logger.log({"memory/reserved_peak": peak_reserved_memory}, rank)
+            
+            # Save model - ref: https://github.com/pytorch/pytorch/issues/98823
+            # HQQLinear custom state_dict() method causes issues when saving.
+            # Model is saved fine when `state_dict()` method is removed.
+            # Non param/buffer types are not saved with FSDP.
+            # It might be better to just save the trained lora layers.
+            # summon_full_params on lora layers and save.
+            if args["save_model"]:
+                if rank == 0:
+                    os.makedirs(args["output_dir"], exist_ok=True)
+                dist.barrier()
+                save_policy = FullStateDictConfig(offload_to_cpu=True, rank0_only=True)
+                if args["train_type"] in ["custom_lora", "custom_qlora", "hqq_lora", "hqq_dora", "bnb_dora", "bnb_llama_pro", "hqq_llama_pro"]:
+                    cpu_state_dict = {}
+                    if args["train_type"] in ["bnb_llama_pro", "hqq_llama_pro"]:
+                        trainable_fsdp_modules =[(n,m) for n,m in model.named_modules() if n.endswith(tuple(new_layer_names))]
+                    else:
+                        trainable_fsdp_modules = [(n,m) for n,m in model.named_modules() if n.endswith(('lora_AB', 'dora_layer', 'magnitude_layer'))]
+                    for prefix, module in trainable_fsdp_modules:
+                        prefix = (prefix.replace("_fsdp_wrapped_module.", "")
+                                        .replace("_checkpoint_wrapped_module.", "")
+                                        .replace("_offload_wrapped_module.", ""))
+                        if args['verbose']: print(f"Saving {prefix}")
+                        with FSDP.state_dict_type(module, StateDictType.FULL_STATE_DICT, save_policy):
+                            cpu_state_dict = {**cpu_state_dict, **{f"{prefix}.{k}":v for k,v in module.state_dict().items()}}
+                        dist.barrier()
+                        torch.cuda.synchronize()
+                    if rank==0:
+                        print("Saving trained LoRA weights.")
+                        save_file(cpu_state_dict, os.path.join(args["output_dir"], "model_state_dict.safetensors"))
+                        print("Done", rank)
+                else:
+                    with FSDP.state_dict_type(model, StateDictType.FULL_STATE_DICT, save_policy):
+                        cpu_state_dict = model.state_dict()
+                        if rank==0:
+                            print("Saving full model weights.")
+                            save_file(cpu_state_dict, os.path.join(args["output_dir"], f"model_state_dict_{epoch}.safetensors"))
+                            print("Done", rank)
+
+    # Synchronize at the end and record time
+    init_end_event.record()
+    dist.barrier()
+    torch.cuda.synchronize()
 
     if rank == 0:
         print("Finished training", rank)

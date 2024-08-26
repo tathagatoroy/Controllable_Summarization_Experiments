@@ -1,0 +1,694 @@
+==========================================
+SLURM_JOB_ID = 1195335
+SLURM_NODELIST = gnode051
+SLURM_JOB_GPUS = 0,1,2,3
+==========================================
+The token has not been saved to the git credentials helper. Pass `add_to_git_credential=True` in this function directly or `--add-to-git-credential` if using via `huggingface-cli` if you want to set the git credential as well.
+Token is valid (permission: read).
+Your token has been saved to /scratch/tathagato/token
+Login successful
+The token has not been saved to the git credentials helper. Pass `add_to_git_credential=True` in this function directly or `--add-to-git-credential` if using via `huggingface-cli` if you want to set the git credential as well.
+Token is valid (permission: read).
+Your token has been saved to /scratch/tathagato/token
+Login successful
+World size: 4
+{'world_size': 4, 'train_type': 'qlora', 'llama_pro_path': None, 'batch_size': 1, 'context_length': 2048, 'gradient_accumulation_steps': 4, 'num_epochs': 1, 'dataset': 'macsum', 'macsum_path': '/home2/tathagato/summarization/MACSUM/dataset/macdoc/train_dataset.json', 'dataset_samples': -1, 'sharding_strategy': 'full_shard', 'use_gradient_checkpointing': 1, 'reentrant_checkpointing': 1, 'use_cpu_offload': 1, 'use_activation_cpu_offload': False, 'low_memory': True, 'no_sync': False, 'precision': 'bf16', 'model_name': 'meta-llama/Meta-Llama-3.1-8B-Instruct', 'save_model': 1, 'output_dir': '/scratch/tathagato/fsdp_qlora_experiments_25_August_25/length', 'lora_rank': 16, 'lora_alpha': 16, 'lora_dropout': 0.1, 'lora_target_modules': 'all', 'verbose': 1, 'lr': 0.0005, 'apply_gradient_clipping': False, 'grad_norm': 0.3, 'wd': 0.1, 'profile_memory': False, 'optimizer': 'adamw', 'lr_scheduler': 'cosine', 'loading_workers': -1, 'log_to': 'wandb', 'master_addr': 'localhost', 'master_port': '12355', 'seed': 42, 'project_name': 'fsdp_qlora', 'name': None, 'group': None, 'entity': None, 'n_bits': 4, 'profile': False, 'profiling_output': 'profiles', 'overwrite_profiling_output': True, 'with_stack': False, 'with_shapes': False, 'export_trace': True, 'export_memory_timeline': False, 'wait_steps': 0, 'warmup_steps': 1, 'active_steps': 2, 'repeat': 0, 'profiling_frequency': 10, 'max_steps': -1, 'attribute': 'length'}
+wandb: Currently logged in as: roy3 (ihub-drug-discovery). Use `wandb login --relogin` to force relogin
+Creating model 1
+Loading model 1
+Creating model 3
+Loading model 3
+Creating model 2
+Loading model 2
+wandb: wandb version 0.17.7 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.16.6
+wandb: Run data is saved locally in /home2/tathagato/summarization/MACSUM/fsdp_lora/wandb/run-20240825_183022-v52c7p7m
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run dark-star-38
+wandb: ⭐️ View project at https://wandb.ai/ihub-drug-discovery/fsdp_qlora
+wandb: 🚀 View run at https://wandb.ai/ihub-drug-discovery/fsdp_qlora/runs/v52c7p7m
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:399: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  input_ids = [torch.tensor(item['input_ids']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:400: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  attention_masks = [torch.tensor(item['attention_mask']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:401: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  labels = [torch.tensor(item['labels']) for item in batch]
+dataset chosen is :  macsum
+Example input_ids shape:  torch.Size([1, 650])
+Example labels shape:  torch.Size([1, 650])
+example input 
+<|begin_of_text|>Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+Write a summary of the source text. The summary should be normal in length. The length is defined in terms of number of words used in the summary. The source text is given below. 
+
+(CNN)Fans of the late actor Paul Walker knew that watching him in "Furious 7" would be bittersweet. Even so, many moviegoers said the final scenes of the new film, which earned a record $146 million over the weekend, still packed an emotional wallop. "Not gonna lie, I shed a few tears at the end of Furious 7. The tribute to Paul Walker was very well done," one woman said Monday on Twitter. Hers was just one of a flood of messages on social media from people who said they got choked up during scenes featuring Walker, who died at 40 in a car crash in November 2013, before filming on "Furious 7" was completed. To finish Walker's scenes, the makers of the movie used body doubles, computer-generated images and even the actor's brothers. But it was the ending that really got to moviegoers. In finishing "Furious 7," the film's producers sought to retire Walker's character, Brian, while paying homage to his role in the blockbuster "Furious" action franchise. But they felt that killing him off might appear exploitative. "If they had gone down the other path, I think I would have refused to finish making this movie," director James Wan told BuzzFeed. Instead, the movie's makers chose to "retire Paul's character in the most sincere and elegant way (they) could," Wan said. Their idea was to have Brian retire from his dangerous, high-octane lifestyle out of a sense of responsibility to his growing family with girlfriend Mia, who is pregnant with their second child. A scene late in the movie shows him and Mia playing on a beach with their son while the crew looks on -- essentially saying goodbye. Then his longtime buddy Dom reminisces about their years together, leading to a montage of Walker scenes from the first six movies. The song that plays over the montage is  "See You Again," a collaboration between Wiz Khalifa and Charlie Puth. Co-star Vin Diesel shared the video for the song late Sunday on his Facebook page, where it has more than 1.5 million likes. Fans on Twitter and Facebook mostly praised the movie's ending as a fitting tribute -- and an emotionally wrenching one. "Man I don't care how tough u are or how gangsta u claim to be....the last five minutes had me choked up in the movie theater... I saw it 3 times in one day......the ending is the deepest ending I've ever seen," one man wrote on the movie's Facebook page.
+
+Response:" The tribute to Paul Walker was very well done," said a fan after watching the Furious 7. The actor was on break from filming "Furious 7" at the time of the fiery accident which also claimed the life of the car's driver, Roger Rodas.<|eot_id|>
+Creating model 0
+Loading model 0
+Total model params: 8030261248
+Using n_workers: 10 for loading
+Loading & Quantizing Model Shards:   0%|          | 0/4 [00:00<?, ?it/s]Loading & Quantizing Model Shards:  25%|██▌       | 1/4 [00:12<00:38, 12.97s/it]Loading & Quantizing Model Shards:  50%|█████     | 2/4 [00:47<00:51, 25.84s/it]Loading & Quantizing Model Shards:  75%|███████▌  | 3/4 [01:23<00:30, 30.32s/it]Loading & Quantizing Model Shards: 100%|██████████| 4/4 [01:32<00:00, 21.88s/it]Loading & Quantizing Model Shards: 100%|██████████| 4/4 [01:32<00:00, 23.11s/it]
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/distributed/fsdp/wrap.py:491: FutureWarning: Please specify CheckpointImpl.NO_REENTRANT as CheckpointImpl.REENTRANT will soon be removed as the default and eventually deprecated.
+  return wrapper_cls(module, **kwargs)
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/distributed/fsdp/wrap.py:491: FutureWarning: Please specify CheckpointImpl.NO_REENTRANT as CheckpointImpl.REENTRANT will soon be removed as the default and eventually deprecated.
+  return wrapper_cls(module, **kwargs)
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/distributed/fsdp/wrap.py:491: FutureWarning: Please specify CheckpointImpl.NO_REENTRANT as CheckpointImpl.REENTRANT will soon be removed as the default and eventually deprecated.
+  return wrapper_cls(module, **kwargs)
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/distributed/fsdp/wrap.py:491: FutureWarning: Please specify CheckpointImpl.NO_REENTRANT as CheckpointImpl.REENTRANT will soon be removed as the default and eventually deprecated.
+  return wrapper_cls(module, **kwargs)
+Loaded model weights in 92.424 seconds
+Rank 0: Model created: 0.105 GiB
+trainable params: 37,748,736 || all params: 8,068,009,984 || trainable%: 0.4678816222942344
+Wrapping model w/ FSDP 0
+Rank 0: Wrapped model: 5.828 GiB
+Applying activation checkpointing 0
+Config:
+LlamaConfig {
+  "_name_or_path": "meta-llama/Meta-Llama-3.1-8B-Instruct",
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 128000,
+  "eos_token_id": [
+    128001,
+    128008,
+    128009
+  ],
+  "hidden_act": "silu",
+  "hidden_size": 4096,
+  "initializer_range": 0.02,
+  "intermediate_size": 14336,
+  "max_position_embeddings": 131072,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 32,
+  "num_hidden_layers": 32,
+  "num_key_value_heads": 8,
+  "pretraining_tp": 1,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": {
+    "factor": 8.0,
+    "high_freq_factor": 4.0,
+    "low_freq_factor": 1.0,
+    "original_max_position_embeddings": 8192,
+    "rope_type": "llama3"
+  },
+  "rope_theta": 500000.0,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.43.4",
+  "use_cache": false,
+  "vocab_size": 128256
+}
+
+Model:
+FullyShardedDataParallel(
+  (_fsdp_wrapped_module): PeftModelForCausalLM(
+    (base_model): LoraModel(
+      (model): LlamaForCausalLM(
+        (model): LlamaModel(
+          (embed_tokens): Embedding(128256, 4096)
+          (layers): ModuleList(
+            (0-31): 32 x FullyShardedDataParallel(
+              (_fsdp_wrapped_module): CheckpointWrapper(
+                (_checkpoint_wrapped_module): LlamaDecoderLayer(
+                  (self_attn): LlamaSdpaAttention(
+                    (q_proj): lora.Linear4bit(
+                      (base_layer): Linear4bit(in_features=4096, out_features=4096, bias=False)
+                      (lora_dropout): ModuleDict(
+                        (default): Dropout(p=0.1, inplace=False)
+                      )
+                      (lora_A): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=4096, out_features=16, bias=False)
+                        )
+                      )
+                      (lora_B): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=16, out_features=4096, bias=False)
+                        )
+                      )
+                      (lora_embedding_A): ParameterDict()
+                      (lora_embedding_B): ParameterDict()
+                    )
+                    (k_proj): lora.Linear4bit(
+                      (base_layer): Linear4bit(in_features=4096, out_features=1024, bias=False)
+                      (lora_dropout): ModuleDict(
+                        (default): Dropout(p=0.1, inplace=False)
+                      )
+                      (lora_A): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=4096, out_features=16, bias=False)
+                        )
+                      )
+                      (lora_B): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=16, out_features=1024, bias=False)
+                        )
+                      )
+                      (lora_embedding_A): ParameterDict()
+                      (lora_embedding_B): ParameterDict()
+                    )
+                    (v_proj): lora.Linear4bit(
+                      (base_layer): Linear4bit(in_features=4096, out_features=1024, bias=False)
+                      (lora_dropout): ModuleDict(
+                        (default): Dropout(p=0.1, inplace=False)
+                      )
+                      (lora_A): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=4096, out_features=16, bias=False)
+                        )
+                      )
+                      (lora_B): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=16, out_features=1024, bias=False)
+                        )
+                      )
+                      (lora_embedding_A): ParameterDict()
+                      (lora_embedding_B): ParameterDict()
+                    )
+                    (o_proj): Linear4bit(in_features=4096, out_features=4096, bias=False)
+                    (rotary_emb): LlamaRotaryEmbedding()
+                  )
+                  (mlp): LlamaMLP(
+                    (gate_proj): lora.Linear4bit(
+                      (base_layer): Linear4bit(in_features=4096, out_features=14336, bias=False)
+                      (lora_dropout): ModuleDict(
+                        (default): Dropout(p=0.1, inplace=False)
+                      )
+                      (lora_A): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=4096, out_features=16, bias=False)
+                        )
+                      )
+                      (lora_B): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=16, out_features=14336, bias=False)
+                        )
+                      )
+                      (lora_embedding_A): ParameterDict()
+                      (lora_embedding_B): ParameterDict()
+                    )
+                    (up_proj): lora.Linear4bit(
+                      (base_layer): Linear4bit(in_features=4096, out_features=14336, bias=False)
+                      (lora_dropout): ModuleDict(
+                        (default): Dropout(p=0.1, inplace=False)
+                      )
+                      (lora_A): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=4096, out_features=16, bias=False)
+                        )
+                      )
+                      (lora_B): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=16, out_features=14336, bias=False)
+                        )
+                      )
+                      (lora_embedding_A): ParameterDict()
+                      (lora_embedding_B): ParameterDict()
+                    )
+                    (down_proj): lora.Linear4bit(
+                      (base_layer): Linear4bit(in_features=14336, out_features=4096, bias=False)
+                      (lora_dropout): ModuleDict(
+                        (default): Dropout(p=0.1, inplace=False)
+                      )
+                      (lora_A): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=14336, out_features=16, bias=False)
+                        )
+                      )
+                      (lora_B): ModuleDict(
+                        (default): FullyShardedDataParallel(
+                          (_fsdp_wrapped_module): Linear(in_features=16, out_features=4096, bias=False)
+                        )
+                      )
+                      (lora_embedding_A): ParameterDict()
+                      (lora_embedding_B): ParameterDict()
+                    )
+                    (act_fn): SiLU()
+                  )
+                  (input_layernorm): LlamaRMSNorm()
+                  (post_attention_layernorm): LlamaRMSNorm()
+                )
+              )
+            )
+          )
+          (norm): LlamaRMSNorm()
+          (rotary_emb): LlamaRotaryEmbedding()
+        )
+        (lm_head): Linear(in_features=4096, out_features=128256, bias=False)
+      )
+    )
+  )
+)
+Starting training
+Optimizer params:
+Shape: torch.Size([262669312]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:399: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  input_ids = [torch.tensor(item['input_ids']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:400: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  attention_masks = [torch.tensor(item['attention_mask']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:401: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  labels = [torch.tensor(item['labels']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:399: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  input_ids = [torch.tensor(item['input_ids']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:400: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  attention_masks = [torch.tensor(item['attention_mask']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:401: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  labels = [torch.tensor(item['labels']) for item in batch]
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:399: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  input_ids = [torch.tensor(item['input_ids']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:400: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  attention_masks = [torch.tensor(item['attention_mask']) for item in batch]
+/home2/tathagato/summarization/MACSUM/fsdp_lora/train.py:401: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  labels = [torch.tensor(item['labels']) for item in batch]
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([13633536]), Requires Grad: False, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([4096]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([57344]), Requires Grad: True, Dtype: torch.bfloat16
+Shape: torch.Size([16384]), Requires Grad: True, Dtype: torch.bfloat16
+Total Training Steps: 267
+  0%|          | 0/267 [00:00<?, ?it/s]Epoch 0, Loss 0.000:   0%|          | 0/267 [00:00<?, ?it/s]/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/utils/checkpoint.py:295: FutureWarning: `torch.cpu.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cpu', args...)` instead.
+  with torch.enable_grad(), device_autocast_ctx, torch.cpu.amp.autocast(**ctx.cpu_autocast_kwargs):  # type: ignore[attr-defined]
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/utils/checkpoint.py:295: FutureWarning: `torch.cpu.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cpu', args...)` instead.
+  with torch.enable_grad(), device_autocast_ctx, torch.cpu.amp.autocast(**ctx.cpu_autocast_kwargs):  # type: ignore[attr-defined]
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/utils/checkpoint.py:295: FutureWarning: `torch.cpu.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cpu', args...)` instead.
+  with torch.enable_grad(), device_autocast_ctx, torch.cpu.amp.autocast(**ctx.cpu_autocast_kwargs):  # type: ignore[attr-defined]
+/home2/tathagato/miniconda3/envs/roy/lib/python3.9/site-packages/torch/utils/checkpoint.py:295: FutureWarning: `torch.cpu.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cpu', args...)` instead.
+  with torch.enable_grad(), device_autocast_ctx, torch.cpu.amp.autocast(**ctx.cpu_autocast_kwargs):  # type: ignore[attr-defined]
+Epoch 0, Loss 0.000:   0%|          | 1/267 [00:39<2:56:15, 39.76s/it]Epoch 0, Loss 2.214, LR 1.92e-05:   0%|          | 1/267 [00:39<2:56:15, 39.76s/it]Epoch 0, Loss 2.214, LR 1.92e-05:   1%|          | 2/267 [01:22<3:03:59, 41.66s/it]Epoch 0, Loss nan, LR 3.85e-05:   1%|          | 2/267 [01:22<3:03:59, 41.66s/it]  Epoch 0, Loss nan, LR 3.85e-05:   1%|          | 3/267 [02:18<3:31:51, 48.15s/it]Epoch 0, Loss 2.169, LR 5.77e-05:   1%|          | 3/267 [02:18<3:31:51, 48.15s/it]Epoch 0, Loss 2.169, LR 5.77e-05:   1%|▏         | 4/267 [03:05<3:27:59, 47.45s/it]Epoch 0, Loss 2.124, LR 7.69e-05:   1%|▏         | 4/267 [03:05<3:27:59, 47.45s/it]Epoch 0, Loss 2.124, LR 7.69e-05:   2%|▏         | 5/267 [03:58<3:36:16, 49.53s/it]Epoch 0, Loss nan, LR 9.62e-05:   2%|▏         | 5/267 [03:58<3:36:16, 49.53s/it]  Epoch 0, Loss nan, LR 9.62e-05:   2%|▏         | 6/267 [04:49<3:38:01, 50.12s/it]Epoch 0, Loss nan, LR 1.15e-04:   2%|▏         | 6/267 [04:49<3:38:01, 50.12s/it]Epoch 0, Loss nan, LR 1.15e-04:   3%|▎         | 7/267 [05:39<3:37:28, 50.19s/it]Epoch 0, Loss nan, LR 1.35e-04:   3%|▎         | 7/267 [05:39<3:37:28, 50.19s/it]Epoch 0, Loss nan, LR 1.35e-04:   3%|▎         | 8/267 [06:23<3:28:09, 48.22s/it]Epoch 0, Loss 1.920, LR 1.54e-04:   3%|▎         | 8/267 [06:23<3:28:09, 48.22s/it]Epoch 0, Loss 1.920, LR 1.54e-04:   3%|▎         | 9/267 [07:01<3:12:37, 44.80s/it]Epoch 0, Loss 1.734, LR 1.73e-04:   3%|▎         | 9/267 [07:01<3:12:37, 44.80s/it]Epoch 0, Loss 1.734, LR 1.73e-04:   4%|▎         | 10/267 [07:56<3:25:20, 47.94s/it]Epoch 0, Loss nan, LR 1.92e-04:   4%|▎         | 10/267 [07:56<3:25:20, 47.94s/it]  Epoch 0, Loss nan, LR 1.92e-04:   4%|▍         | 11/267 [08:47<3:29:21, 49.07s/it]Epoch 0, Loss 1.685, LR 2.12e-04:   4%|▍         | 11/267 [08:47<3:29:21, 49.07s/it]Epoch 0, Loss 1.685, LR 2.12e-04:   4%|▍         | 12/267 [09:36<3:28:29, 49.06s/it]Epoch 0, Loss 1.627, LR 2.31e-04:   4%|▍         | 12/267 [09:36<3:28:29, 49.06s/it]Epoch 0, Loss 1.627, LR 2.31e-04:   5%|▍         | 13/267 [10:23<3:24:38, 48.34s/it]Epoch 0, Loss 1.773, LR 2.50e-04:   5%|▍         | 13/267 [10:23<3:24:38, 48.34s/it]Epoch 0, Loss 1.773, LR 2.50e-04:   5%|▌         | 14/267 [11:17<3:31:10, 50.08s/it]Epoch 0, Loss nan, LR 2.69e-04:   5%|▌         | 14/267 [11:17<3:31:10, 50.08s/it]  Epoch 0, Loss nan, LR 2.69e-04:   6%|▌         | 15/267 [12:06<3:28:51, 49.73s/it]Epoch 0, Loss 1.593, LR 2.88e-04:   6%|▌         | 15/267 [12:06<3:28:51, 49.73s/it]Epoch 0, Loss 1.593, LR 2.88e-04:   6%|▌         | 16/267 [12:48<3:18:16, 47.39s/it]Epoch 0, Loss 1.774, LR 3.08e-04:   6%|▌         | 16/267 [12:48<3:18:16, 47.39s/it]Epoch 0, Loss 1.774, LR 3.08e-04:   6%|▋         | 17/267 [13:38<3:21:01, 48.25s/it]Epoch 0, Loss nan, LR 3.27e-04:   6%|▋         | 17/267 [13:38<3:21:01, 48.25s/it]  Epoch 0, Loss nan, LR 3.27e-04:   7%|▋         | 18/267 [14:22<3:15:19, 47.07s/it]Epoch 0, Loss 1.596, LR 3.46e-04:   7%|▋         | 18/267 [14:23<3:15:19, 47.07s/it]Epoch 0, Loss 1.596, LR 3.46e-04:   7%|▋         | 19/267 [15:14<3:20:29, 48.51s/it]Epoch 0, Loss 1.773, LR 3.65e-04:   7%|▋         | 19/267 [15:14<3:20:29, 48.51s/it]Epoch 0, Loss 1.773, LR 3.65e-04:   7%|▋         | 20/267 [16:01<3:17:25, 47.96s/it]Epoch 0, Loss nan, LR 3.85e-04:   7%|▋         | 20/267 [16:01<3:17:25, 47.96s/it]  slurmstepd: error: *** JOB 1195335 ON gnode051 CANCELLED AT 2024-08-25T18:49:25 ***

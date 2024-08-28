@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
 
 
-    reference = dataset[0]["reference"]
+    reference = dataset[0]["output"]
     print(f"reference : {reference}")
 
 
@@ -153,14 +153,19 @@ if __name__ == "__main__":
     model.eval()
     with torch.no_grad():
         for index, item in tqdm.tqdm(enumerate(dataset), desc="Generating summaries"):
-            new_item = {key: value.to('cuda') for key, value in item.items() if key != 'reference'}
+            new_item = {key: value.to('cuda') for key, value in item.items() if key == 'input_ids'}
             output = model.generate(**new_item, do_sample=args.do_sample, top_p=args.top_p, top_k=args.top_k, max_new_tokens=args.max_new_tokens, num_return_sequences=args.num_return_sequences)
             
             decoded_text = tokenizer.decode(output[0], skip_special_tokens=True)
             generation_ids = output[0,len(new_item["input_ids"][0]):]
             generated_text = tokenizer.decode(generation_ids, skip_special_tokens=True)
             prompt = tokenizer.decode(new_item["input_ids"][0], skip_special_tokens=True)
-            result_dict[index] = {'input': prompt, 'summary': generated_text, 'reference': item['reference'], 'generated_text' : decoded_text}
+            result_dict[index] = {'input': prompt, 'predicted_summary': generated_text, 'reference': item['output'], 'generated_text' : decoded_text}
+            for key in item.keys():
+                if key not in result_dict[index].keys():
+                    result_dict[index][key] = item[key]
+    
+
         end_time = time.time()
     print(f"Total time taken for generating summaries : {end_time - start_time}")
     print(f"Average time taken for generating summaries : {(end_time - start_time)/len(dataset)}")
@@ -168,12 +173,12 @@ if __name__ == "__main__":
     with open(result_path, 'wb') as f:
         pkl.dump(result_dict, f)
 
-    for key in result_dict.keys():
-        print(f"input : {result_dict[key]['input']}")
-        print(f"summary : {result_dict[key]['summary']}")
-        print(f"reference : {result_dict[key]['reference']}")
-        print(f"generated_text : {result_dict[key]['generated_text']}")
-        print("---------------------------------------------------")
+    # for key in result_dict.keys():
+    #     print(f"input : {result_dict[key]['input']}")
+    #     print(f"summary : {result_dict[key]['summary']}")
+    #     print(f"reference : {result_dict[key]['reference']}")
+    #     print(f"generated_text : {result_dict[key]['generated_text']}")
+    #     print("---------------------------------------------------")
 
 
 

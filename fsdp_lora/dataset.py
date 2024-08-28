@@ -33,17 +33,17 @@ class MACSUM(Dataset):
         self.dataset_path = dataset_path
         self.dataset = json.load(open(dataset_path,"r"))
         self.size = size 
-        if self.size != -1:
-            self.dataset = dict(list(self.dataset.items())[:self.size])
-        else:
-            self.size = len(self.dataset)
         self.tokenizer = tokenizer
         self.attribute = attribute
         self.filter_by_attribute()
         self.mode = mode
         self.system_prompt = "You are an honest and to the point assistant, please follow the instruction and answer to the point"
         self.model_type = model_type
-
+        if self.size != -1:
+            self.dataset = dict(list(self.dataset.items())[:self.size])
+            self.index_to_keys = list(self.dataset.keys())
+        else:
+            self.size = len(self.dataset)
 
 
 
@@ -121,7 +121,7 @@ class MACSUM(Dataset):
             example , prompt = self.format_data_llama31(instruction, src, reference)
         #example = prompt + reference
 
-        prompt = torch.tensor(
+        tokenized_prompt = torch.tensor(
             self.tokenizer.encode(prompt, add_special_tokens = False), dtype=torch.int64
         )
         example = self.tokenizer.encode(example, add_special_tokens = False)
@@ -139,10 +139,15 @@ class MACSUM(Dataset):
         #labels[~label_mask] = IGNORE_INDEX
         if self.mode == 'inference':
             return {
-                "input_ids": prompt.unsqueeze(0),
+                "input_ids": tokenized_prompt.unsqueeze(0),
                 #"labels": labels.unsqueeze(0),
                 #"attention_mask":example_mask.unsqueeze(0),
-                "reference" : reference
+                "output" : reference,
+                "input": src,
+                "prompt": prompt,
+                "control_value": attribute_value,
+                "control_attribute": self.attribute
+
             }
         else:
 

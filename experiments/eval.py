@@ -394,10 +394,9 @@ def get_abstractive_data(data):
     return result
 
 
-
-
-def output_length_metrics(data):
+def cleanup_dict(data):
     keys = list(data.keys())
+
     for key in tqdm.tqdm(keys):
         if 'generated_text' not in data[key]:
             #remove the element from dict
@@ -406,7 +405,14 @@ def output_length_metrics(data):
             continue
         summary = data[key]['generated_text'].split("\n")[-1]
         data[key]['predicted_summary'] = summary
+    return data 
 
+def output_length_metrics(data):
+    keys = list(data.keys())
+    zero_key = keys[0]
+    if "predicted_summary" not in data[zero_key]:
+        data = cleanup_dict(data)
+    #print(data[zero_key].keys())
     result = get_length_stats(data)
     segregrated_data = {}
     keys = list(data.keys())
@@ -538,7 +544,8 @@ def get_topic_score(data):
     gold_scores = []
     for key in data:
         gold_summary = data[key]['output']
-        prediction = data[key]['generated_text'].split("\n")[-1]
+        #prediction = data[key]['generated_text'].split("\n")[-1]
+        prediction = data[key]['predicted_summary']
         topic_value = data[key]['control_value']
         topic_scores.append(get_topic_value(topic_value, prediction))
         gold_scores.append(get_topic_value(topic_value, gold_summary))
@@ -606,7 +613,8 @@ def get_spe(data):
         gold_summary = data[key]['output']
         if 'generated_text' not in data[key]:
             continue
-        prediction = data[key]['generated_text'].split("\n")[-1]
+        #prediction = data[key]['generated_text'].split("\n")[-1]
+        prediction = data[key]['predicted_summary']
         if len(prediction) == 0:
             continue
 

@@ -700,6 +700,8 @@ def fsdp_main(local_rank:int, world_size:int, args:Dict):
 
         if rank==0:
             model.print_trainable_parameters()
+            #check if peftmodel
+            i
         elif args['low_memory']:
             # And then setup_quantized_peft_meta_for_training sets quant_state.to back to normal
             setup_quantized_peft_meta_for_training(model)

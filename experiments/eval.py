@@ -492,25 +492,25 @@ def output_extractiveness_metrics(data):
         if control_value not in segregrated_data:
             segregrated_data[control_value] = {}
         segregrated_data[control_value][key] = data[key]
-    for control_value in segregrated_data:
-        print("control value ", control_value)
-        control_error, control_errors, generated_frs, reference_frs = get_control_error_for_extractiveness(segregrated_data[control_value])
-        print("Control Error", control_error)
-        print("num examples : ", len(control_errors))
-        print("prediction F score : ",sum(generated_frs) / len(generated_frs))
-        print("gold F score : ",sum(reference_frs) / len(reference_frs))
-        result[control_value]['cer'] = control_error
-        result[control_value]['prediction_f_score'] = sum(generated_frs) / len(generated_frs)
-        result[control_value]['gold_f_score'] = sum(reference_frs) / len(reference_frs)
+    # for control_value in segregrated_data:
+    #     print("control value ", control_value)
+    #     #control_error, control_errors, generated_frs, reference_frs = get_control_error_for_extractiveness(segregrated_data[control_value])
+    #     #print("Control Error", control_error)
+    #     print("num examples : ", len(control_errors))
+    #     print("prediction F score : ",sum(generated_frs) / len(generated_frs))
+    #     print("gold F score : ",sum(reference_frs) / len(reference_frs))
+    #     result[control_value]['cer'] = control_error
+    #     result[control_value]['prediction_f_score'] = sum(generated_frs) / len(generated_frs)
+    #     result[control_value]['gold_f_score'] = sum(reference_frs) / len(reference_frs)
 
-    overall_cer, control_errors, generated_frs, reference_frs = get_control_error_for_extractiveness(data)
-    print("Overall Control Error", overall_cer)
-    print("num examples : ", len(control_errors))
-    print("prediction F score : ",sum(generated_frs) / len(generated_frs))
-    print("gold F score : ",sum(reference_frs) / len(reference_frs))
-    result['overall_cer'] = overall_cer
-    result['overall_prediction_f_score'] = sum(generated_frs) / len(generated_frs)
-    result['overall_gold_f_score'] = sum(reference_frs) / len(reference_frs)
+    # overall_cer, control_errors, generated_frs, reference_frs = get_control_error_for_extractiveness(data)
+    # print("Overall Control Error", overall_cer)
+    # print("num examples : ", len(control_errors))
+    # print("prediction F score : ",sum(generated_frs) / len(generated_frs))
+    # print("gold F score : ",sum(reference_frs) / len(reference_frs))
+    # result['overall_cer'] = overall_cer
+    # result['overall_prediction_f_score'] = sum(generated_frs) / len(generated_frs)
+    # result['overall_gold_f_score'] = sum(reference_frs) / len(reference_frs)
     return result
 
     #get_abstractive_data(data)

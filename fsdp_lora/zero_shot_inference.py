@@ -38,7 +38,7 @@ def get_quantized_model(model_id):
     bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
-    bnb_4bit_use_double_quant=False,
+    bnb_4bit_use_double_quant=True,
     bnb_4bit_compute_dtype=torch.bfloat16
     )
     model = AutoModelForCausalLM.from_pretrained(
@@ -53,7 +53,7 @@ def return_peft_model(model_id, rank = 32, alpha = 16):
     bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_quant_type="nf4",
-    bnb_4bit_use_double_quant=False,
+    bnb_4bit_use_double_quant=True,
     bnb_4bit_compute_dtype=torch.bfloat16
     )
     model = AutoModelForCausalLM.from_pretrained(

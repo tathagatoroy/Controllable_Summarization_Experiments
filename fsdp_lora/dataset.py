@@ -29,7 +29,7 @@ PROMPT_DICT = {
 
 # Dataset class
 class MACSUM(Dataset):
-    def __init__(self, dataset_path = "/home2/tathagato/summarization/MACSUM/dataset/macdoc/val_dataset.json", attribute = 'length', tokenizer = None, mode = 'inference', size = -1, model_type = 'llama31'):
+    def __init__(self, dataset_path = "/home2/tathagato/summarization/MACSUM/dataset/macdoc/val_dataset.json", attribute = 'length', tokenizer = None, mode = 'inference', size = -1,max_seq_len = 2048, model_type = 'llama31'):
         self.dataset_path = dataset_path
         self.dataset = json.load(open(dataset_path,"r"))
         self.size = size 
@@ -39,6 +39,7 @@ class MACSUM(Dataset):
         self.mode = mode
         self.system_prompt = "You are an honest and to the point assistant, please follow the instruction and answer to the point"
         self.model_type = model_type
+        self.max_seq_len = max_seq_len
         if self.size != -1:
             self.dataset = dict(list(self.dataset.items())[:self.size])
             self.index_to_keys = list(self.dataset.keys())
@@ -96,9 +97,9 @@ class MACSUM(Dataset):
         #mistral doesn't require system prompt
         # Construct the full text in Mistral format
         full_text = f"<s>[INST] {instruction}"
-        full_text += f" {input_text}"
-        prompt = full_text + f" [/INST]"
-        full_text += f" [/INST]{output}</s>"
+        full_text += f" {input_text}[/INST]"
+        prompt = full_text 
+        answer = prompt + f"{output}</s>"
         return full_text, prompt
 
 
@@ -150,6 +151,12 @@ class MACSUM(Dataset):
 
             }
         else:
+            #padding and truncating the sequence
+            # print(f" input_ids shape: {example.shape} | labels shape: {labels.shape} | attention_mask shape: {example_mask.shape}")
+            # example = pad_sequence(example, batch_first=True, padding_value=self.tokenizer.pad_token_id)[:, :self.max_seq_len]
+            # attention_masks = pad_sequence(example_mask, batch_first=True, padding_value=0)[:, :self.max_seq_len]
+            # labels = pad_sequence(labels, batch_first=True, padding_value=-100)[:, :self.max_seq_len]
+            # print(f" input_ids shape: {example.shape} | labels shape: {labels.shape} | attention_mask shape: {attention_masks.shape}")
 
             return {
                 "input_ids": example,

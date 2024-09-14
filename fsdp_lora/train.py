@@ -413,7 +413,9 @@ def get_dataloader(tokenizer:PreTrainedTokenizerFast, args:Dict):
         return {'input_ids': input_ids, 'attention_mask': attention_masks, 'labels': labels}
 
     # For distributed training, use DistributedSampler
-    sampler = DistributedSampler(dataset, seed=args["seed"])
+    #sampler = DistributedSampler(dataset, seed=args["seed"])
+    sampler = DistributedSampler(dataset, rank = 0,seed=args["seed"])
+
 
     # Use the custom collate function in DataLoader
     dataloader = DataLoader(dataset, batch_size=args["batch_size"], collate_fn=collate_fn, sampler=sampler)

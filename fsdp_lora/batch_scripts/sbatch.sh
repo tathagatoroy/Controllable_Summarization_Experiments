@@ -1,26 +1,27 @@
 #!/bin/bash
-
-#SBATCH -A research
-#SBATCH -n 38
-#SBATCH --gres=gpu:4
-#SBATCH --mem-per-cpu=3000M
+#SBATCH -A kcis
+#SBATCH -n 27
+#SBATCH --gres=gpu:2
+#SBATCH --mem-per-cpu=4000M
 #SBATCH --time=4-00:00:00
-#SBATCH --job-name=69_sdp_lora_Finetune_inference
-#SBATCH --output=finetune.out
+#SBATCH --job-name=hlora
+#SBATCH --output=hlora.out
+#SBATCH --partition=lovelace
 #SBATCH --mail-user=tathagato.roy@research.iiit.ac.in
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
-#SBATCH -w gnode069
+#SBATCH -w gnode121
+export NCCL_P2P_DISABLE=1
 
-./login_huggingface.sh
+# ./login_huggingface.sh
 
-# Remove the temporary file after login
-rm -f "$TEMP_FILE"
-./run_train.sh
-
+# # Remove the temporary file after login
+# rm -f "$TEMP_FILE"
+# ./test_dpo.sh
+python hlora_tasks.py
 echo "Completed"
 
 

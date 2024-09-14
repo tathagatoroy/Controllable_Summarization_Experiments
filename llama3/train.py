@@ -138,15 +138,18 @@ def main(model_args, data_args, training_args):
     set_seed(training_args.seed)
 
     # model
+    print("Creating and preparing model")
     model, peft_config, tokenizer = create_and_prepare_model(model_args, data_args, training_args)
 
     # gradient ckpt
+    print("Gradient Checkpointing")
     model.config.use_cache = not training_args.gradient_checkpointing
     training_args.gradient_checkpointing = training_args.gradient_checkpointing and not model_args.use_unsloth
     if training_args.gradient_checkpointing:
         training_args.gradient_checkpointing_kwargs = {"use_reentrant": model_args.use_reentrant}
 
     # datasets
+    print("Creating datasets")
     train_dataset, eval_dataset = create_datasets(
         tokenizer,
         data_args,
@@ -157,6 +160,7 @@ def main(model_args, data_args, training_args):
         print("model and dataset is loaded")
 
     # trainer
+    print("Creating trainer")
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -177,6 +181,7 @@ def main(model_args, data_args, training_args):
         trainer.model.print_trainable_parameters()
 
     # train
+    print("Training")
     checkpoint = None
     if training_args.resume_from_checkpoint is not None:
         checkpoint = training_args.resume_from_checkpoint

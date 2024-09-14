@@ -117,3 +117,14 @@ wandb/
 *.pt
 *.pth
 
+
+# Ignore all directories named 'logs' anywhere in the repository
+**/logs/
+
+# Ignore all directories named 'wandb' anywhere in the repository
+**/wandb/
+
+# Ignore all directories named '__pycache__' anywhere in the repository
+**/__pycache__/
+
+*.png

@@ -494,8 +494,8 @@ def output_extractiveness_metrics(data):
         segregrated_data[control_value][key] = data[key]
     # for control_value in segregrated_data:
     #     print("control value ", control_value)
-    #     #control_error, control_errors, generated_frs, reference_frs = get_control_error_for_extractiveness(segregrated_data[control_value])
-    #     #print("Control Error", control_error)
+    #     control_error, control_errors, generated_frs, reference_frs = get_control_error_for_extractiveness(segregrated_data[control_value])
+    #     print("Control Error", control_error)
     #     print("num examples : ", len(control_errors))
     #     print("prediction F score : ",sum(generated_frs) / len(generated_frs))
     #     print("gold F score : ",sum(reference_frs) / len(reference_frs))

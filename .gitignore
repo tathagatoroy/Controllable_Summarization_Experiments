@@ -110,6 +110,7 @@ venv.bak/
 *.log 
 *.txt
 *.pkl
+*.out
 
 #ignore all wandb folder
 wandb/

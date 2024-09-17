@@ -3,3 +3,9 @@ SLURM_JOB_ID = 1208575
 SLURM_NODELIST = gnode121
 SLURM_JOB_GPUS = 0,1
 ==========================================
+Success: CUDA_VISIBLE_DEVICES=1 python train_hlora.py --output_dir /scratch/tathagato/storm_llama31_length_then_extractiveness --attribute_1 length --attribute_2 extractiveness --model_id akjindal53244/Llama-3.1-Storm-8B 
+Success: CUDA_VISIBLE_DEVICES=0 python train_hlora.py --output_dir /scratch/tathagato/mistral_length_then_extractiveness --attribute_1 length --attribute_2 extractiveness --model_id mistralai/Mistral-7B-Instruct-v0.3 
+Success: CUDA_VISIBLE_DEVICES=1 python train_hlora.py --output_dir /scratch/tathagato/storm_llama31_extractiveness_then_length --attribute_2 length --attribute_1 extractiveness --model_id akjindal53244/Llama-3.1-Storm-8B 
+Success: CUDA_VISIBLE_DEVICES=0 python train_hlora.py --output_dir /scratch/tathagato/mistral_extractiveness_then_length --attribute_2 length --attribute_1 extractiveness --model_id mistralai/Mistral-7B-Instruct-v0.3 
+All tasks completed.
+Completed

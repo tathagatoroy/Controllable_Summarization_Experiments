@@ -26,7 +26,7 @@ def timer(func):
 
 
 @timer
-def generate_text(model, dataset, batch_size=8, max_length=2048, tokenizer = None, args=None):
+def generate_text(model, dataset, tokenizer = None, config=None):
     """
     Generate text summaries using a model for a given dataset.
 
@@ -40,13 +40,7 @@ def generate_text(model, dataset, batch_size=8, max_length=2048, tokenizer = Non
     
     tokenizer : PreTrainedTokenizer
         
-    batch_size : int, optional (default=8)
-        The number of samples per batch.
-        
-    max_length : int, optional (default=2048)
-        The maximum length of generated sequences.
-
-    args : Namespace, optional
+    config : dict, optional
         Contains generation parameters like `do_sample`, `top_p`, `top_k`, `max_new_tokens`, and `num_return_sequences`.
     
     Returns:
@@ -66,11 +60,11 @@ def generate_text(model, dataset, batch_size=8, max_length=2048, tokenizer = Non
             # Generate the output using the model
             output = model.generate(
                 **new_item, 
-                do_sample=args.do_sample, 
-                top_p=args.top_p, 
-                top_k=args.top_k, 
-                max_new_tokens=args.max_new_tokens, 
-                num_return_sequences=args.num_return_sequences
+                do_sample=config['do_sample'], 
+                top_p=config['top_p'], 
+                top_k=config['top_k'], 
+                max_new_tokens=config['max_new_tokens'], 
+                num_return_sequences=config['num_return_sequences']
             )
             
             # Decode the generated output
@@ -99,7 +93,7 @@ def generate_text(model, dataset, batch_size=8, max_length=2048, tokenizer = Non
                     result_dict[index][key] = item[key]
             
             # Print the generated text for each item
-            print("generated_text:", generated_text)
+            #print("generated_text:", generated_text)
     
     return result_dict
 
@@ -220,7 +214,7 @@ def collate_function(tokenizer):
 
 
 @timer 
-def train(model, tokenizer, dataset, args=None, device=0, save_pretrained = True, wandb = None):
+def train(model, tokenizer, dataset, config=None, device=0, save_pretrained = True, wandb = None):
     """
     Trains a transformer model using gradient accumulation and cosine learning rate scheduling.
 
@@ -235,7 +229,7 @@ def train(model, tokenizer, dataset, args=None, device=0, save_pretrained = True
     dataset : Dataset
         The dataset to train on. Each element should contain 'input_ids', 'attention_mask', and 'labels'.
 
-    args : Namespace or dict
+    config : Namespace or dict
         A configuration object that contains training parameters such as:
         - `batch_size`
         - `gradient_accumulation_steps`
@@ -259,7 +253,7 @@ def train(model, tokenizer, dataset, args=None, device=0, save_pretrained = True
 
     Example:
     --------
-    >>> train(model, tokenizer, dataset, args, device=0)
+    >>> train(model, tokenizer, dataset, config, device=0)
     """
 
     # Set the device
@@ -270,19 +264,19 @@ def train(model, tokenizer, dataset, args=None, device=0, save_pretrained = True
     model.gradient_checkpointing_enable()
     
     # Set up the DataLoader for training
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, collate_fn=collate_function(tokenizer))
+    dataloader = DataLoader(dataset, batch_size=config['batch_size'], collate_fn=collate_function(tokenizer))
     
     # Set up optimizer (AdamW is commonly used for transformers)
-    optimizer = AdamW(model.parameters(), lr=args.learning_rate)
+    optimizer = AdamW(model.parameters(), lr=config['learning_rate'])
     
     # Prepare for training
     model.train()
     global_step = 0
-    effective_batch_size = args.batch_size * args.gradient_accumulation_steps
-    total_examples = len(dataloader.dataset) * args.num_epochs
-    total_steps = (total_examples + effective_batch_size - 1) // args.batch_size
-    effective_steps = total_steps // args.gradient_accumulation_steps
-    warmup_steps = int(args.warmup_ratio * effective_steps)
+    effective_batch_size = config['batch_size'] * config['gradient_accumulation_steps']
+    total_examples = len(dataloader.dataset) * config['num_epochs']
+    total_steps = (total_examples + effective_batch_size - 1) // config['batch_size']
+    effective_steps = total_steps // config['gradient_accumulation_steps']
+    warmup_steps = int(config['warmup_ratio'] * effective_steps)
 
     print(f"Starting training for attribute: {dataloader.dataset.attribute}")
     print(f"Total steps: {total_steps} | Total Effective steps : {effective_steps} Warmup steps: {warmup_steps}")
@@ -310,19 +304,19 @@ def train(model, tokenizer, dataset, args=None, device=0, save_pretrained = True
         
         # Forward pass
         outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
-        loss = outputs.loss / args.gradient_accumulation_steps
+        loss = outputs.loss / config['gradient_accumulation_steps']
         total_loss += loss.item()
         
         # Backward pass and gradient accumulation
         loss.backward()
         
-        if (step + 1) % args.gradient_accumulation_steps == 0 or step == total_steps - 1:
+        if (step + 1) % config['gradient_accumulation_steps'] == 0 or step == total_steps - 1:
             effective_step_cnt += 1
             # Clip gradients to avoid exploding gradients
-            grad = torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+            grad = torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_grad_norm'])
             
             # Update learning rate using cosine decay
-            lr = get_lr(effective_step_cnt, warmup_steps, effective_steps , args.max_lr, args.min_lr)
+            lr = get_lr(effective_step_cnt, warmup_steps, effective_steps , config['max_lr'], config['min_lr'])
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr
 
@@ -336,43 +330,43 @@ def train(model, tokenizer, dataset, args=None, device=0, save_pretrained = True
             total_loss = 0
         
             # Save the model at every `logging_steps` interval
-            if effective_steps % args.logging_steps == 0:
+            if effective_steps % config['logging_steps'] == 0:
                 if save_pretrained:
-                    model_save_path = os.path.join(args.output_dir, f"model_{step}_{dataloader.dataset.attribute}")
+                    model_save_path = os.path.join(config['output_dir'], f"model_{step}_{dataloader.dataset.attribute}")
                     model.save_pretrained(model_save_path)
                 else:
-                    model_save_path = os.path.join(args.output_dir, f"model_{step}_{dataloader.dataset.attribute}.pt")
+                    model_save_path = os.path.join(config['output_dir'], f"model_{step}_{dataloader.dataset.attribute}.pt")
                     torch.save(model.state_dict(), model_save_path)
                     print(f"Model saved at {model_save_path}")
             
             # Evaluate the model at every `eval_interval`
-            if effective_steps % args.eval_interval == 0:
-                eval_loss = evaluate(model, tokenizer, dataset, args, device)
+            if effective_steps % config['eval_interval'] == 0:
+                eval_loss = evaluate(model, tokenizer, dataset, config, device)
                 if wandb:
                     wandb.log({"eval_loss": eval_loss})
                 print(f"Eval Loss at step {step}: {eval_loss:.4f}")
                 if eval_loss < best_eval_loss:
                     best_eval_loss = eval_loss
                     if save_pretrained:
-                        model_save_path = os.path.join(args.output_dir, f"best_model_{step}_{dataloader.dataset.attribute}")
+                        model_save_path = os.path.join(config['output_dir'], f"best_model_{step}_{dataloader.dataset.attribute}")
                         model.save_pretrained(model_save_path)
                     else:
-                        model_save_path = os.path.join(args.output_dir, f"best_model_{step}_{dataloader.dataset.attribute}.pt")
+                        model_save_path = os.path.join(config['output_dir'], f"best_model_{step}_{dataloader.dataset.attribute}.pt")
                         torch.save(model.state_dict(), model_save_path)
                     print(f"Best Model saved at {model_save_path}")
     print("training done")
     if save_pretrained:
-        model_save_path = os.path.join(args.output_dir, f"final_model_{dataloader.dataset.attribute}")
+        model_save_path = os.path.join(config['output_dir'], f"final_model_{dataloader.dataset.attribute}")
         model.save_pretrained(model_save_path)
     else:
-        model_save_path = os.path.join(args.output_dir, f"final_model_{dataloader.dataset.attribute}.pt")
+        model_save_path = os.path.join(config['output_dir'], f"final_model_{dataloader.dataset.attribute}.pt")
         torch.save(model.state_dict(), model_save_path)
     print(f"Final Model saved at {model_save_path}")
     
 
 
 @timer
-def evaluate(model, tokenizer, dataset, args, device=0):
+def evaluate(model, tokenizer, dataset, config = None, device=0):
     """
     Evaluates the model by computing the evaluation loss on the provided dataset.
 
@@ -387,7 +381,7 @@ def evaluate(model, tokenizer, dataset, args, device=0):
     dataset : Dataset
         The dataset to evaluate on.
 
-    args : Namespace or dict
+    config : Namespace or dict
         A configuration object containing evaluation parameters such as batch_size.
 
     device : int, optional (default=0)
@@ -400,12 +394,12 @@ def evaluate(model, tokenizer, dataset, args, device=0):
 
     Example:
     --------
-    >>> eval_loss = evaluate(model, tokenizer, dataset, args, device=0)
+    >>> eval_loss = evaluate(model, tokenizer, dataset, config, device=0)
     """
 
     # Set the model to evaluation mode
     model.eval()
-    eval_dataloader = DataLoader(dataset, batch_size=args.batch_size, collate_fn=collate_function(tokenizer))
+    eval_dataloader = DataLoader(dataset, batch_size=config['batch_size'], collate_fn=collate_function(tokenizer))
     
     total_eval_loss = 0
     total_steps = len(eval_dataloader)

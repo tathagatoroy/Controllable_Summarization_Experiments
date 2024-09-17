@@ -11,7 +11,7 @@ from typing import List, Dict, Any, Tuple, Optional
 
 # Dataset class
 class MACSUM(Dataset):
-    def __init__(self, dataset_path = "/home2/tathagato/summarization/MACSUM/dataset/macdoc/val_dataset.json", attributes:Optional[List] = None, tokenizer = None, mode = 'inference', size = -1,max_seq_len = 2048, model_type = 'llama31'):
+    def __init__(self, dataset_path = "/home2/tathagato/summarization/MACSUM/dataset/macdoc/val_dataset.json", attributes:Optional[List] = None, tokenizer = None, mode = 'inference', size = -1,max_seq_len = 2048, model_type = 'llama'):
         self.dataset_path = dataset_path
         self.dataset = json.load(open(dataset_path,"r"))
         self.size = size 
@@ -98,7 +98,7 @@ class MACSUM(Dataset):
 
         if self.model_type == 'mistral':
             example , prompt = self.format_data_mistral(instruction, src, reference)
-        elif self.model_type == 'llama31':
+        elif self.model_type == 'llama':
             example , prompt = self.format_data_llama31(instruction, src, reference)
         #example = prompt + reference
         controllability_dict = {attr : self.dataset[self.index_to_keys[index]]['control_attribute'][attr] for attr in self.attributes}
@@ -166,7 +166,7 @@ if __name__=='__main__':
     print(tokenizer.all_special_ids)
     print(tokenizer.all_special_tokens)
     
-    model_ids = ['mistral','llama31']
+    model_ids = ['mistral','llama']
     dataset_modes = ['train','inference']
     dataset_attributes = [['length'],['extractiveness'],['specificity'],['topic'],['length', 'extractiveness']]
     dataset_path = "/home2/tathagato/summarization/MACSUM/dataset/macdoc/val_dataset.json"

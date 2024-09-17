@@ -206,7 +206,7 @@ def collate_function(tokenizer):
         # Pad the sequences to the same length for the batch
         input_ids = pad_sequence(input_ids, batch_first=True, padding_value=tokenizer.pad_token_id)
         attention_mask = pad_sequence(attention_mask, batch_first=True, padding_value=0)
-        labels = pad_sequence(labels, batch_first=True, padding_value=-1)
+        labels = pad_sequence(labels, batch_first=True, padding_value=-100)
 
         # Return the padded tensors as a dictionary
         return {

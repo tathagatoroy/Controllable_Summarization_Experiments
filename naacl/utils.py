@@ -18,7 +18,7 @@ def load_peft_checkpoint(config, quantization_config, checkpoint_path):
     """ load a peft checkpoint """
     peft_config = PeftConfig.from_pretrained(checkpoint_path)
     model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
-    model = PeftModel.from_pretrained(model = model, model_id = checkpoint_path, adapter_name= config['attributes'][0], is_trainable= False, config = peft_config)
+    model = PeftModel.from_pretrained(model = model, model_id = checkpoint_path, is_trainable= False, config = peft_config)
     return model
 
 def get_adapter_status(peft_model):
@@ -62,7 +62,7 @@ def get_single_adapter_lora_model(base_model, lora_config , adapter_name):
         adapter_name : str
                
     """
-    model = get_peft_model(base_model, lora_config, adapter_name)
+    model = get_peft_model(model = base_model, peft_config = lora_config, adapter_name = adapter_name)
     #model = prepare_model_for_kbit_training(model) # not sure if this necessary , this is causing a bug for now disabling
     return model
 
@@ -264,7 +264,7 @@ def collate_function(tokenizer):
 
 
 @timer 
-def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, save_pretrained = True, do_wandb = False):
+def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, save_pretrained = True, do_wandb = False, joint_training = False):
     """
     Trains a transformer model using gradient accumulation and cosine learning rate scheduling.
 
@@ -298,6 +298,13 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
     
     device : int, optional (default=0)
         The GPU device ID. If not available, falls back to CPU.
+
+    save_pretrained : bool, optional (default=True)
+
+    do_wandb : bool, optional (default=False)
+        If True, logs training metrics to Weights & Biases.
+    joint_training : bool, optional (default=False)
+        If True, the model is trained jointly on two or more attributes.
     
     Returns:
     --------
@@ -330,7 +337,7 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
     total_steps = (total_examples + config['batch_size'] - 1) // config['batch_size']
     effective_steps = (total_steps + config['gradient_accumulation_steps'] - 1) // config['gradient_accumulation_steps']
     warmup_steps = int(config['warmup_ratio'] * effective_steps)
-
+    adapter_name = "_and_".join(dataloader.dataset.attributes)
     print(f"Starting training for attribute: {dataloader.dataset.attributes[0]}")
     print(f"Total steps: {total_steps} | Total Effective steps : {effective_steps} Warmup steps: {warmup_steps}")
     print(f"Effective batch size: {effective_batch_size} | Total examples: {total_examples}")
@@ -344,6 +351,11 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
     effective_step_cnt = 0
     best_eval_loss = 1e12
     # Training loop
+    print("calling evaluate for step ", effective_step_cnt)
+    eval_loss = evaluate(model, tokenizer, eval_dataset, config, device)
+    if do_wandb:
+        wandb.log({"eval_loss": eval_loss})
+    print(f"Eval Loss at step {effective_step_cnt}: {eval_loss:.4f}")
     with torch.autograd.detect_anomaly():
         for step in tqdm.tqdm(range(total_steps), total=total_steps, desc="Training"):
             # Reset the dataloader after going through it once
@@ -385,31 +397,32 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
                 total_loss = 0
             
                 # Save the model at every `logging_steps` interval
-                if effective_steps % config['logging_steps'] == 0:
+                if effective_step_cnt % config['logging_steps'] == 0:
                     if save_pretrained:
-                        model_save_path = os.path.join(config['output_dir'], f"model_{step}_{dataloader.dataset.attributes[0]}")
+                        model_save_path = os.path.join(config['output_dir'], f"model_{step}_{adapter_name}")
                         model.save_pretrained(model_save_path)
                         print(f"Model saved at {model_save_path}")
 
                     else:
-                        model_save_path = os.path.join(config['output_dir'], f"model_{step}_{dataloader.dataset.attributes[0]}.pt")
+                        model_save_path = os.path.join(config['output_dir'], f"model_{step}_{adapter_name}.pt")
                         torch.save(model.state_dict(), model_save_path)
                         print(f"Model saved at {model_save_path}")
                 
                 # Evaluate the model at every `eval_interval`
-                if effective_steps % config['eval_interval'] == 0:
+                if effective_step_cnt % config['eval_interval'] == 0:
+                    print("calling evaluate for step ", effective_step_cnt)
                     eval_loss = evaluate(model, tokenizer, eval_dataset, config, device)
                     if do_wandb:
                         wandb.log({"eval_loss": eval_loss})
-                    print(f"Eval Loss at step {step}: {eval_loss:.4f}")
+                    print(f"Eval Loss at step {effective_step_cnt}: {eval_loss:.4f}")
                     if eval_loss < best_eval_loss:
                         best_eval_loss = eval_loss
                         if save_pretrained:
-                            model_save_path = os.path.join(config['output_dir'], f"best_model_{dataloader.dataset.attributes[0]}")
+                            model_save_path = os.path.join(config['output_dir'], f"best_model_{adapter_name}")
                             model.save_pretrained(model_save_path)
                             print(f"Model saved at {model_save_path}")
                         else:
-                            model_save_path = os.path.join(config['output_dir'], f"best_model_{dataloader.dataset.attributes[0]}.pt")
+                            model_save_path = os.path.join(config['output_dir'], f"best_model_{adapter_name}.pt")
                             torch.save(model.state_dict(), model_save_path)
                             print(f"Model saved at {model_save_path}")
                         print(f"Best Model saved at {model_save_path}")
@@ -418,10 +431,10 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
                 
     print("training done")
     if save_pretrained:
-        model_save_path = os.path.join(config['output_dir'], f"final_model_{dataloader.dataset.attributes[0]}")
+        model_save_path = os.path.join(config['output_dir'], f"final_model_{adapter_name}")
         model.save_pretrained(model_save_path, safe_serialization=False)
     else:
-        model_save_path = os.path.join(config['output_dir'], f"final_model_{dataloader.dataset.attributes[0]}.pt")
+        model_save_path = os.path.join(config['output_dir'], f"final_model_{adapter_name}.pt")
         torch.save(model.state_dict(), model_save_path)
     print(f"Final Model saved at {model_save_path}")
     

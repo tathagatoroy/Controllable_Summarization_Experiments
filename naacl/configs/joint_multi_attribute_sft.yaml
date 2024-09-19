@@ -17,7 +17,7 @@ global:
   max_new_tokens : 500
   num_return_sequences : 1
   do_sample : True
-  output_dir : /scratch/tathagato/naacl/single_attribute_sft
+  output_dir : /scratch/tathagato/naacl/joint_mult_attribute_sft
   max_seq_len : 2048
   batch_size : 4
   learning_rate : 0.00005
@@ -33,6 +33,11 @@ global:
   wandb_project : "naacl"
 
 experiments :
+
+  llama_length_and_extractiveness_test:
+    model_id : akjindal53244/Llama-3.1-Storm-8B
+    attributes : ['length', 'extractiveness']
+    model_type : llama
 
 
   llama_length:

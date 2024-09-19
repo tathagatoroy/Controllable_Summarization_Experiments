@@ -9,7 +9,7 @@ config_path = "/home2/tathagato/summarization/MACSUM/naacl/configs/single_attrib
 with open(config_path, "r") as f:
     config = yaml.safe_load(f)
 
-DEBUG = False
+DEBUG = True
 experiment_names = list(config["experiments"].keys())
 
 # Set up GPU and experiment configurations

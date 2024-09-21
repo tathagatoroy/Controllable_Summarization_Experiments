@@ -25,61 +25,79 @@ global:
   num_epochs : 2
   warmup_ratio : 0.1
   max_grad_norm : 1.0
-  logging_steps : 1
-  eval_interval : 1
-  max_lr : 0.00005
-  min_lr : 0.00001
+  logging_steps : 100
+  eval_interval : 50
+  max_lr : 0.000005
+  min_lr : 0.000001
   do_wandb : True
   wandb_project : "naacl"
 
 experiments :
-
   llama_length_and_extractiveness_test:
     model_id : akjindal53244/Llama-3.1-Storm-8B
     attributes : ['length', 'extractiveness']
     model_type : llama
 
-
-  llama_length:
+  llama_length_and_extractiveness:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['length']
+    attributes : ['length', 'extractiveness']
     model_type : llama
 
-  llama_extractiveness:
+  llama_length_and_topic:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['extractiveness']
+    attributes : ['length', 'topic']
     model_type : llama
-
-  llama_topic:
+  
+  llama_length_and_specificity:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['topic']
+    attributes : ['length', 'specificity']
     model_type : llama
-
-  llama_specificity:
+  
+  llama_extractiveness_and_topic:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['specificity']
+    attributes : ['extractiveness', 'topic']
     model_type : llama
-
-  mistral_length:
+  
+  llama_extractiveness_and_specificity:
+    model_id : akjindal53244/Llama-3.1-Storm-8B
+    attributes : ['extractiveness', 'specificity']
+    model_type : llama
+  
+  llama_topic_and_specificity:
+    model_id : akjindal53244/Llama-3.1-Storm-8B
+    attributes : ['topic', 'specificity']
+    model_type : llama
+  
+  mistral_length_and_extractiveness:
     model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length']
-    model_type : mistral
-
-  mistral_extractiveness:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['extractiveness']
+    attributes : ['length', 'extractiveness']
     model_type : mistral
   
-  mistral_topic:
+  mistral_length_and_topic:
     model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['topic']
-    model_type : mistral
-
-  mistral_specificity:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['specificity']
+    attributes : ['length', 'topic']
     model_type : mistral
   
+  mistral_length_and_specificity:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['length', 'specificity']
+    model_type : mistral
+  
+  mistral_extractiveness_and_topic:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['extractiveness', 'topic']
+    model_type : mistral
+  
+  mistral_extractiveness_and_specificity:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['extractiveness', 'specificity']
+    model_type : mistral
+  
+  mistral_topic_and_specificity:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['topic', 'specificity']
+    model_type : mistral
+
 
 
   

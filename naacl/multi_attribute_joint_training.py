@@ -202,16 +202,16 @@ if __name__ == "__main__":
 
     #print the active adapter
     get_adapter_status(model)
-
+    train_adapter_name = "_and_".join(experiment_config["attributes"])
     for i, test_dataset in tqdm.tqdm(enumerate(test_datasets)):
         print(f"generating on test dataset with attributes {test_dataset.attributes}")
         result_dict = generate_text(model, test_dataset, tokenizer = tokenizer, config = config)
         print("done generating text for test dataset with attributes ", test_dataset.attributes)
         adapter_name = "_and_".join(test_dataset.attributes)
-        with open(os.path.join(config["output_dir"], f"results_{adapter_name}.pkl"), "wb") as f:
+        with open(os.path.join(config["output_dir"], f"model_{train_adapter_name}_results_{adapter_name}.pkl"), "wb") as f:
             pkl.dump(result_dict, f)
 
-        print("done saving results at ", os.path.join(config["output_dir"], f"results_{adapter_name}.pkl"))
+        print("done saving results at ", os.path.join(config["output_dir"], f"model_{train_adapter_name}_results_{adapter_name}.pkl"))
 
 
 

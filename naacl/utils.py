@@ -197,7 +197,7 @@ def get_lr(it, num_warmup_steps, num_training_steps, max_lr, min_lr):
     return min_lr + 0.5 * (max_lr - min_lr) * (1 + math.cos(math.pi * progress))
 
 
-def collate_function(tokenizer):
+def collate_function(tokenizer, config):
     """
     Returns a collate function for use in a DataLoader that dynamically pads input sequences 
     (input_ids, attention_mask, and labels) to the same length within a batch.
@@ -248,9 +248,9 @@ def collate_function(tokenizer):
             tokenizer.pad_token = tokenizer.eos_token
         
         # Pad the sequences to the same length for the batch
-        input_ids = pad_sequence(input_ids, batch_first=True, padding_value=tokenizer.pad_token_id)
-        attention_mask = pad_sequence(attention_mask, batch_first=True, padding_value=0)
-        labels = pad_sequence(labels, batch_first=True, padding_value=-100)
+        input_ids = pad_sequence(input_ids, batch_first=True, padding_value=tokenizer.pad_token_id)[:config['max_seq_len']]
+        attention_mask = pad_sequence(attention_mask, batch_first=True, padding_value=0)[:config['max_seq_len']]
+        labels = pad_sequence(labels, batch_first=True, padding_value=-100)[:config['max_seq_len']]
 
         # Return the padded tensors as a dictionary
         return {
@@ -324,7 +324,7 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
     model.gradient_checkpointing_enable()
     model.enable_input_require_grads() #https://github.com/huggingface/peft/issues/137#issuecomment-1445912413 otherwise it is breaking 
     # Set up the DataLoader for training
-    dataloader = DataLoader(train_dataset, batch_size=config['batch_size'], collate_fn=collate_function(tokenizer))
+    dataloader = DataLoader(train_dataset, batch_size=config['batch_size'], collate_fn=collate_function(tokenizer, config))
     
     # Set up optimizer (AdamW is commonly used for transformers)
     optimizer = AdamW(model.parameters(), lr=config['learning_rate'])
@@ -395,6 +395,7 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
                 
                 print(f"Step: {effective_step_cnt} | Loss: {total_loss:.4f} | Learning Rate: {lr:.8f} | Grad Norm: {grad:.4f}")
                 total_loss = 0
+
             
                 # Save the model at every `logging_steps` interval
                 if effective_step_cnt % config['logging_steps'] == 0:
@@ -428,6 +429,8 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
                         print(f"Best Model saved at {model_save_path}")
                         print(f"Best Eval Loss: {best_eval_loss:.4f}")
                         print(f"Best Step: {effective_step_cnt}")
+            del input_ids, attention_mask, labels, outputs
+            torch.cuda.empty_cache()
                 
     print("training done")
     if save_pretrained:
@@ -474,7 +477,7 @@ def evaluate(model, tokenizer, dataset, config = None, device=0):
 
     # Set the model to evaluation mode
     model.eval()
-    eval_dataloader = DataLoader(dataset, batch_size=config['batch_size'], collate_fn=collate_function(tokenizer))
+    eval_dataloader = DataLoader(dataset, batch_size=config['batch_size'], collate_fn=collate_function(tokenizer, config))
     
     total_eval_loss = 0
     total_steps = len(eval_dataloader)
@@ -489,8 +492,9 @@ def evaluate(model, tokenizer, dataset, config = None, device=0):
             outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
             loss = outputs.loss
             total_eval_loss += loss.item()
+            del input_ids, attention_mask, labels, outputs
     
     avg_eval_loss = total_eval_loss / total_steps
     model.train()  # Return to training mode after evaluation
-
+    torch.cuda.empty_cache()
     return avg_eval_loss

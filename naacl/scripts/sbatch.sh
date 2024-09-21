@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --mem-per-cpu=4000M
 #SBATCH --time=4-00:00:00
-#SBATCH --job-name=sft_single_attribute 
+#SBATCH --job-name=sft_single_and_multi_attribute 
 #SBATCH --output=/home2/tathagato/summarization/MACSUM/naacl/logs/sbatch_output.out
 #SBATCH --partition=lovelace
 #SBATCH --mail-user=tathagato.roy@research.iiit.ac.in
@@ -16,8 +16,13 @@
 #SBATCH -w gnode121
 export NCCL_P2P_DISABLE=1
 
-
+echo "single attribute sft started"
 python run_all_sft_single_attribute.py
+echo "single attribute sft completed"
+echo "multi attribute sft started"
+python run_all_sft_joint_multi_attribute.py
+echo "multi attribute sft completed"
+
 echo "Completed"
 
 

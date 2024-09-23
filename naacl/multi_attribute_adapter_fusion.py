@@ -147,8 +147,8 @@ if __name__ == "__main__":
             model_type = experiment_config["model_type"]
         )
         val_dataset = MACSUM(
-            dataset_path = config["val_dataset_path"],
-            attributes = experiment_config["attributes"][1:],
+            dataset_path = config["val_dataset_path"][1:],
+            attributes = experiment_config["attributes"],
             tokenizer = tokenizer,
             mode = "train",
             size = -1,

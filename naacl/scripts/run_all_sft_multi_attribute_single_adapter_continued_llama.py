@@ -13,15 +13,13 @@ DEBUG = False
 experiment_names = list(config["experiments"].keys())
 #filter out the experiments that have names which contain test
 experiment_names = [experiment for experiment in experiment_names if "test" not in experiment]
-for experiment in experiment_names:
-    print(experiment)
-
+experiment_names = [experiment for experiment in experiment_names if "llama" in experiment]
 
 print("number of experiments to run", len(experiment_names))
 
 # Set up GPU and experiment configurations
 gpu_capacity = 1  # Each GPU can run 5 experiments at a time
-num_gpus = 3  # Number of GPUs available
+num_gpus = 4  # Number of GPUs available
 experiments_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 processes_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 

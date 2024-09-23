@@ -14,11 +14,14 @@ import wandb
 from peft import get_peft_config, get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftConfig, PeftModel
 
 
-def load_peft_checkpoint(config, quantization_config, checkpoint_path):
+def load_peft_checkpoint(config, quantization_config, checkpoint_path, is_trainable = False, adapter_name = None):
     """ load a peft checkpoint """
     peft_config = PeftConfig.from_pretrained(checkpoint_path)
     model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
-    model = PeftModel.from_pretrained(model = model, model_id = checkpoint_path, is_trainable= False, config = peft_config)
+    if adapter_name is not None:
+        model = PeftModel.from_pretrained(model = model, model_id = checkpoint_path, is_trainable= is_trainable, config = peft_config, adapter_name = adapter_name)
+    else:
+        model = PeftModel.from_pretrained(model = model, model_id = checkpoint_path, is_trainable= is_trainable, config = peft_config)
     return model
 
 def get_adapter_status(peft_model):
@@ -264,7 +267,7 @@ def collate_function(tokenizer, config):
 
 
 @timer 
-def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, save_pretrained = True, do_wandb = False, joint_training = False):
+def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, save_pretrained = True, do_wandb = False, adapter_name = None):
     """
     Trains a transformer model using gradient accumulation and cosine learning rate scheduling.
 
@@ -337,7 +340,8 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
     total_steps = (total_examples + config['batch_size'] - 1) // config['batch_size']
     effective_steps = (total_steps + config['gradient_accumulation_steps'] - 1) // config['gradient_accumulation_steps']
     warmup_steps = int(config['warmup_ratio'] * effective_steps)
-    adapter_name = "_and_".join(dataloader.dataset.attributes)
+    if adapter_name is None:
+        adapter_name = "_and_".join(dataloader.dataset.attributes)
     print(f"Starting training for attribute: {dataloader.dataset.attributes[0]}")
     print(f"Total steps: {total_steps} | Total Effective steps : {effective_steps} Warmup steps: {warmup_steps}")
     print(f"Effective batch size: {effective_batch_size} | Total examples: {total_examples}")

@@ -13,6 +13,30 @@ import os
 import wandb
 from peft import get_peft_config, get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftConfig, PeftModel
 
+def load_fused_adapter_model(config, quantization_config, is_trainable = False, adapter_name = None, combination_type = 'linear'):
+
+    model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
+    model = PeftModel.from_pretrained(model, config['checkpoint_paths'][0] , adapter_name=config['attributes'][0], is_trainable= is_trainable)
+    print("loading the first adapter")
+    get_adapter_status(model)
+
+    model.load_adapter(config['checkpoint_paths'][1], adapter_name= config['attributes'][1], is_trainable= is_trainable)
+    print("loading the second adapter")
+    get_adapter_status(model)
+    
+    model.add_weighted_adapter(
+    adapters=config['attributes'],
+    weights=config['weights'],
+    adapter_name=adapter_name,
+    combination_type=combination_type
+    )
+    print("loading the fused adapter")
+    model.set_adapter(adapter_name)
+    get_adapter_status(model)
+
+    print(model.active_adapters)
+    return model
+
 
 def load_peft_checkpoint(config, quantization_config, checkpoint_path, is_trainable = False, adapter_name = None):
     """ load a peft checkpoint """
@@ -139,6 +163,7 @@ def generate_text(model, dataset, tokenizer = None, config=None):
                 'control_value': item['control_value'], 
                 'control_attribute': item['control_attribute']
             }
+
             
             # Add any missing keys from the original item to the result
             for key in item.keys():

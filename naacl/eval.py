@@ -359,11 +359,12 @@ def evaluate(file, supported_evaluation = ['length','extractiveness']):
         first_control_values = []
         second_control_values = []
         for item in data.values():
-            for index, attribute in enumerate(item['control_attribute']):
-                if attribute == attributes[0]:
-                    first_control_values.append(item['control_value'][index])
-                if attribute == attributes[1]:
-                    second_control_values.append(item['control_value'][index])
+            if item['control_value'][0] != '' and item['control_value'][1] != '':
+                for index, attribute in enumerate(item['control_attribute']):
+                    if attribute == attributes[0]:
+                        first_control_values.append(item['control_value'][index])
+                    if attribute == attributes[1]:
+                        second_control_values.append(item['control_value'][index])
         assert len(candidates) == len(references) == len(articles) == len(first_control_values) == len(second_control_values), f"Error in length mismatch candidates {len(candidates)} references {len(references)} articles {len(articles)} control_values {len(first_control_values)}, {len(second_control_values)}"
         print("length of data is ", len(candidates))
         if attributes[0] not in supported_evaluation:
@@ -397,3 +398,4 @@ def zero_shot_evaluation(zero_shot_directory):
         pkl.dump(results, f)
 
     return results
+

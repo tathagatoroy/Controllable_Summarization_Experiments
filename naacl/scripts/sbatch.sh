@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -A kcis
-#SBATCH -n 10
-#SBATCH --gres=gpu:1
+#SBATCH -n 55
+#SBATCH --gres=gpu:4
 #SBATCH --qos=kl4
 #SBATCH --mem-per-cpu=4000M
 #SBATCH --time=4-00:00:00
@@ -17,7 +17,7 @@
 #SBATCH -N 1
 export NCCL_P2P_DISABLE=1
 
-python run_all_weighted_adapter_fusion.py
+python run_all_dpo_single_attribute.py
 
 echo "Completed"
 

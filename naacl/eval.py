@@ -222,6 +222,26 @@ def get_extractive_coverage(article, summary):
     frags, article_tokens, summary_tokens = get_extractive_fragments(article, summary)
     coverage = float(sum([len(f) for f in frags])) / float(len(summary_tokens))
     return coverage
+
+def get_topic_results(candidates, references, articles, control_values):
+    rouge_results = get_rouge_score(candidates, references)
+    rouge_1s = [result['rouge1']['f1'] for result in rouge_results['results']]
+    rouge_2s = [result['rouge2']['f1'] for result in rouge_results['results']]
+    rouge_3s = [result['rouge3']['f1'] for result in rouge_results['results']]
+    rouge_Ls = [result['rougeL']['f1'] for result in rouge_results['results']]
+    final_results = {}
+    final_results['rouge_raw'] = rouge_results
+    final_results['overall'] = {'rouge1' : np.mean(rouge_1s), 'rouge2' : np.mean(rouge_2s), 'rouge3' : np.mean(rouge_3s), 'rougeL' : np.mean(rouge_Ls), 'number' : len(candidates)}
+    for key in final_results.keys():
+        if key == 'rouge_raw':
+            continue
+        print(f"--------------{key}----------------")
+        res = final_results[key]
+        for sub_key in res.keys():
+            print(f"{sub_key} : {res[sub_key]}")
+        print("-------------------------------------------------")
+    
+
 def get_extractiveness_results(candidates, references, articles, control_values):
     rouge_results = get_rouge_score(candidates, references)
     article_referenced_rouge_results = get_rouge_score(articles, references)
@@ -310,6 +330,10 @@ def get_model_and_attributes(filename):
     name, ext = os.path.splitext(basename)
     model = name.split("_")[0]
     splits = name.split("_")
+    #if fused is in splits then only take list after fused
+    if 'fused' in splits:
+        fused_index = splits.index('fused')
+        splits = splits[fused_index:]
     attributes = [attribute for attribute in splits if attribute in all_attributes]
     return model, attributes
 
@@ -325,11 +349,13 @@ def get_results(file, candidates, references, articles, attribute, control_value
         return get_length_results(candidates, references, articles, control_values)
     elif attribute == 'extractiveness':
         return get_extractiveness_results(candidates, references, articles, control_values)
+    elif attribute == 'topic':
+        return get_topic_results(candidates, references, articles, control_values)
     else:
         print("not implemented for this attribute", attribute)
         None 
 
-def evaluate(file, supported_evaluation = ['length','extractiveness']):
+def evaluate(file, supported_evaluation = ['length','extractiveness', 'topic']):
     model, attributes = get_model_and_attributes(file)
     print(f"evaluating {model} with attributes {attributes}")
     data = load_pickle(file)
@@ -399,3 +425,30 @@ def zero_shot_evaluation(zero_shot_directory):
 
     return results
 
+
+def adapter_fusion_evaluation(adapter_fusion):
+    folders = [os.path.join(adapter_fusion, folder) for folder in os.listdir(adapter_fusion) if os.path.isdir(os.path.join(adapter_fusion, folder))]
+    files = []
+    for folder in folders:
+        basenames = [filename for filename, ext in [os.path.splitext(file) for file in os.listdir(folder)]]
+        # for now I only care only about the joint prompts 
+        splits = [basename.split("_") for basename in basenames]
+        model_names = [split[0] for split in splits]
+        #if number of ands is 2 then it is a joint prompt
+        for model_name, split, basename in zip(model_names, splits, basenames):
+            if split.count('and') == 2:
+                files.append([model_name, os.path.join(folder, basename + ".pkl")])
+    results = {}
+    for model_name, file in files:
+        print("evaluating ", model_name, file)
+        model_results = evaluate(file)
+        print("\n\n")
+        results[file] = model_results
+    #save results
+    output_dir = "/scratch/tathagato/naacl/compiled_outputs"
+    os.makedirs(output_dir, exist_ok = True)
+    output_file = os.path.join(output_dir, "adapter_fusion_results.pkl")
+    with open(output_file, "wb") as f:
+        pkl.dump(results, f)
+
+        

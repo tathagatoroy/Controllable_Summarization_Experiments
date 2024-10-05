@@ -15,6 +15,7 @@
 #SBATCH --mail-type=REQUEUE
 #SBATCH --mail-type=ALL
 #SBATCH -N 1
+#SBATCH -w gnode121
 export NCCL_P2P_DISABLE=1
 
 python run_all_dpo_single_attribute.py

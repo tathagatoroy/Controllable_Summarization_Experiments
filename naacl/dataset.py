@@ -7,6 +7,7 @@ import json
 import torch
 import copy
 from typing import List, Dict, Any, Tuple, Optional
+import datasets
 
 
 # Dataset class
@@ -30,8 +31,7 @@ class MACSUM(Dataset):
 
 
 
-    def alpaca_promp_format(self, src_text, instruction):
-        return f"Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.\n\n{instruction}\n\n{src_text}\n\nResponse:"
+    
     def generate_attribute_specific_instruction(self,control_attributes):
         base_prompt = f"Write a summary of the source text."
         ca_aspects = ""
@@ -57,9 +57,14 @@ class MACSUM(Dataset):
     def filter_by_attribute(self):
         tmp_dataset = {}
         for key , value in self.dataset.items():
+            #joint dataset : all the attributes have to be non empty
+            valid = True 
             for attr in self.attributes:
-                if value['control_attribute'][attr] != '':
-                    tmp_dataset[key] = value
+                if value['control_attribute'][attr] == "":
+                    valid = False
+                    break
+            if valid:
+                tmp_dataset[key] = value
         self.dataset = tmp_dataset
         self.index_to_keys = list(self.dataset.keys())
 
@@ -136,6 +141,150 @@ class MACSUM(Dataset):
                 "attention_mask":example_mask
             }
 
+
+class dpo_dataset(Dataset):
+
+    def __init__(self, dataset_path = "/home2/tathagato/summarization/MACSUM/dataset/macdoc/train.json", attributes = ['length'], tokenizer = None, mode = 'train', model_type = "llama", size = -1):
+        self.dataset_path = dataset_path
+        self.data = json.load(open(dataset_path,"r"))
+        self.size = size 
+        self.tokenizer = tokenizer
+        self.attributes = attributes
+        self.generate_dpo_pairs()
+        self.mode = mode
+        self.model_type = model_type
+        self.system_prompt = "You are an honest and to the point assistant, please follow the instruction and answer to the point. Please do not provide any irrelevant information or add any extra words than that is necessary to answer the question."
+        self.keys = list(self.dataset.keys())
+        if self.size != -1:
+            self.dataset = {key : self.dataset[key] for key in self.keys[:self.size]}
+    def generate_dpo_pairs(self):
+        dataset = {}
+        new_idx = 0
+        for idx, example in enumerate(self.data):
+            #keys is source : input text
+            # references : List of dicts which contain subdict control_attribute, summary
+            input_text = example['source'][0]
+            references = example['references']
+            for idx_1, reference_1 in  enumerate(references):
+                #check if all attributes are present 
+                control_attributes = reference_1['control_attribute']
+                is_valid = True
+                for attr in self.attributes:
+                    if control_attributes[attr] == "":
+                        is_valid = False
+                        break
+                if is_valid:
+                    for idx_2, reference_2 in enumerate(references):
+                        if idx_1 != idx_2:
+                            control_attributes_2 = reference_2['control_attribute']
+                            #check values chosen attributes do not match 
+                            is_valid_pair = True
+                            for attr in self.attributes:
+                                if control_attributes[attr] == control_attributes_2[attr]:
+                                    is_valid_pair = False
+                                    break
+                            if is_valid_pair:
+                                new_datapoint = {
+                                    "source" : input_text,
+                                    "chosen" : reference_1['summary'],
+                                    "rejected" : reference_2['summary'],
+                                    "chosen_raw" : reference_1['control_attribute'],
+                                    "rejected_raw" : reference_2['control_attribute'],
+                                    "control_attributes" : self.attributes,
+                                    "control_values" : [control_attributes[attr] for attr in self.attributes]
+
+                                
+                                }
+                                dataset[new_idx] = new_datapoint
+                                new_idx += 1
+        self.dataset = dataset
+
+                        
+
+                
+    def __len__(self):
+        return len(self.dataset)
+
+    def generate_attribute_specific_instruction(self,control_attributes):
+        base_prompt = f"Write a summary of the source text."
+        ca_aspects = ""
+        for attr in self.attributes:
+            control_value = control_attributes[attr]
+            if attr == 'length':
+                ca_aspect = f"The summary should be {control_value} in length. The length is defined in terms of number of words used in the summary."
+            elif attr == 'extractiveness':
+                ca_aspect = f"The summary should be {control_value} in extractiveness. Extractiveness is defined by the degree of exact copying from the source text."
+            elif attr == 'specificity':
+                ca_aspect = f"The summary should be {control_value} in specificity. Specificity is defined by the degree of detail in the summary."
+            elif attr == 'topic':
+                ca_aspect = f"The summary should be focussed on the topic {control_value}."
+            elif attr == 'Speaker':
+                ca_aspect = f"The summary should be written from the perspective of {control_value}."
+            ca_aspects += ca_aspect
+        #prompt = f"{base_prompt} {ca_aspect}. The source text is given below. "
+        instruction = f"{base_prompt} {ca_aspects}. The source text is given below. "
+        return instruction
+
+    def format_dpo_data_llama(self, instruction, input_text, chosen, rejected):
+        
+        # full_text = f"<|begin_of_text|><|start_header_id|>system<|end_header_id|> {self.system_prompt}<|eot_id|>"
+        # full_text += f"<|start_header_id|>user<|end_header_id|> {instruction}\n\n{input_text}<|eot_id|>"
+        # prompt = full_text + f"<|start_header_id|>assistant<|end_header_id|>"
+        # full_text += f"<|start_header_id|>assistant<|end_header_id|> {output}<|eot_id|>"
+
+        system_prompt = f"<|start_header_id|>system<|end_header_id|> {self.system_prompt}<|eot_id|>"
+        prompt = system_prompt + f"<|start_header_id|>user<|end_header_id|> \n\n{instruction}\n{input_text}<|eot_id|>"
+        chosen = f"<|start_header_id|>assistant<|end_header_id|>\n\n{chosen}"
+        rejected = f"<|start_header_id|>assistant<|end_header_id|>\n\n{rejected}"
+        return prompt, chosen, rejected
+    
+    
+    def format_dpo_data_mistral(self, instruction, input_text , chosen, rejected):
+        prompt = f"[INST] {instruction}.\n{input_text} [/INST]"
+        chosen = f"{chosen}"
+        rejected = f"{rejected}"
+        return prompt, chosen, rejected
+    
+
+    def __getitem__(self, index):
+        #IGNORE_INDEX = -100
+        source = self.dataset[index]['source']
+        prefered_control_attributes = self.dataset[index]['control_attributes'] 
+        chosen = self.dataset[index]['chosen']
+        rejected = self.dataset[index]['rejected']
+        chosen_raw = self.dataset[index]['chosen_raw']
+        rejected_raw = self.dataset[index]['rejected_raw']
+        instruction = self.generate_attribute_specific_instruction(chosen_raw) 
+        prompt = instruction
+        if self.model_type == "llama":
+            prompt, chosen, rejected = self.format_dpo_data_llama(instruction, source, chosen, rejected)
+        elif self.model_type == "mistral":
+            prompt, chosen, rejected = self.format_dpo_data_mistral(instruction, source, chosen, rejected)
+        examples = {
+            "prompt" : prompt,
+            "chosen" : chosen,
+            "rejected" : rejected,
+            "prefered_control_attributes" : prefered_control_attributes,
+            "chosen_raw" : chosen_raw,
+            "rejected_raw" : rejected_raw
+        }
+        return examples
+
+
+    
+def get_huggingface_dataset(dataset):
+
+    dataset_dict = {}
+    keys = dataset[0].keys()
+    size = len(dataset)
+    for key in keys:
+        dataset_dict[key] = []
+    for idx in range(size):
+        example = dataset[idx]
+        for key in keys:
+            dataset_dict[key].append(example[key])
+    dataset = datasets.Dataset.from_dict(dataset_dict)
+    return dataset
 
 def display_inference_dataset(dataset):
     example = dataset[0]

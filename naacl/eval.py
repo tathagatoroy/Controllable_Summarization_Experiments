@@ -19,6 +19,7 @@ from nltk import word_tokenize, ngrams
 import math
 from collections import defaultdict
 from nltk.corpus import stopwords
+import glob
 nltk.download('averaged_perceptron_tagger')
 nltk.download('stopwords')
 st_words = stopwords.words('english')
@@ -427,6 +428,29 @@ def zero_shot_evaluation(zero_shot_directory):
     return results
 
 
+def single_adapter_joint_training_evaluation(single_adapter_joint_training_directory):
+    # walk recursively through the directory and get all the files which ends with pkl
+    experiments = os.listdir(single_adapter_joint_training_directory)
+    results = {}
+    for exp in tqdm.tqdm(experiments):
+        pkl_files = [f for f in os.listdir(os.path.join(single_adapter_joint_training_directory, exp)) if f.endswith(".pkl")]
+        model = exp.split("_")[0]
+        attributes = [f for f in exp.split("_")[1:] if f in ['length', 'extractiveness', 'topic', 'specificity']]
+        relevant_pickle_file = None
+        for pkl_file in pkl_files:
+            #number of and should be 2 in the file name
+            if relevant_pickle_file is None and pkl_file.split("_").count('and') == 2:
+                relevant_pickle_file = pkl_file
+                break
+        results[exp] = evaluate(os.path.join(single_adapter_joint_training_directory, exp, relevant_pickle_file), model = model, attributes = attributes)
+    #save results
+    output_dir = "/scratch/tathagato/naacl/compiled_outputs"
+    os.makedirs(output_dir, exist_ok = True)
+    output_file = os.path.join(output_dir, "single_adapter_joint_training_results.pkl")
+    with open(output_file, "wb") as f:
+        pkl.dump(results, f)
+    return results
+
 def single_sft_evaluation(single_sft_directory = "/scratch/tathagato/naacl/single_attribute_sft"):
     experiment_paths = [(folder, os.path.join(single_sft_directory, folder, "results.pkl")) for folder in os.listdir(single_sft_directory) if os.path.isdir(os.path.join(single_sft_directory, folder))]
     results = {}
@@ -439,6 +463,36 @@ def single_sft_evaluation(single_sft_directory = "/scratch/tathagato/naacl/singl
     output_dir = "/scratch/tathagato/naacl/compiled_outputs"
     os.makedirs(output_dir, exist_ok = True)
     output_file = os.path.join(output_dir, "single_sft_results.pkl")
+    with open(output_file, "wb") as f:
+        pkl.dump(results, f)
+    return results
+
+def multi_attribute_single_adapter_continuous_training__sft_evaluation(multi_attribute_single_adapter_continuous_training_directory = "/scratch/tathagato/naacl/multi_attribute_single_adapter_continued_sft/"):
+    experiments = os.listdir(multi_attribute_single_adapter_continuous_training_directory)
+    results = {}
+    for exp in tqdm.tqdm(experiments):
+        pkl_files = [f for f in os.listdir(os.path.join(multi_attribute_single_adapter_continuous_training_directory, exp)) if f.endswith(".pkl")]
+        model = exp.split("_")[0]
+        attributes = [f for f in exp.split("_")[1:] if f in ['length', 'extractiveness', 'topic', 'specificity']]
+        relevant_pickle_file = None
+        for pkl_file in pkl_files:
+            #number of and should be 2 in the file name
+            if relevant_pickle_file is None and pkl_file.split("_").count('and') == 2:
+                relevant_pickle_file = pkl_file
+                break
+        results[exp] = evaluate(os.path.join(multi_attribute_single_adapter_continuous_training_directory, exp, relevant_pickle_file), model = model, attributes = attributes)
+def single_dpo_evaluation(single_sft_directory = "/scratch/tathagato/naacl/single_attribute_dpo"):
+    experiment_paths = [(folder, os.path.join(single_sft_directory, folder, "results.pkl")) for folder in os.listdir(single_sft_directory) if os.path.isdir(os.path.join(single_sft_directory, folder))]
+    results = {}
+    for experiment, result_path in tqdm.tqdm(experiment_paths):
+        model_name = experiment.split("_")[0]
+        attributes = experiment.split("_")[1:]
+        model_results = evaluate(result_path, model = model_name, attributes = attributes)
+        results[experiment] = model_results
+    #save results
+    output_dir = "/scratch/tathagato/naacl/compiled_outputs"
+    os.makedirs(output_dir, exist_ok = True)
+    output_file = os.path.join(output_dir, "single_dpo_results.pkl")
     with open(output_file, "wb") as f:
         pkl.dump(results, f)
     return results

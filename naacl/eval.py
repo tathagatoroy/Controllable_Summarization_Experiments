@@ -322,7 +322,7 @@ def get_extractiveness_results(candidates, references, articles, control_values)
     return final_results
     
     
-    
+
 
 def get_model_and_attributes(filename):
     all_attributes = ['length', 'extractiveness' , 'topic', 'specificity']
@@ -355,8 +355,9 @@ def get_results(file, candidates, references, articles, attribute, control_value
         print("not implemented for this attribute", attribute)
         None 
 
-def evaluate(file, supported_evaluation = ['length','extractiveness', 'topic']):
-    model, attributes = get_model_and_attributes(file)
+def evaluate(file, supported_evaluation = ['length','extractiveness', 'topic'], model = None, attributes = None):
+    if model is None and attributes is None:
+        model, attributes = get_model_and_attributes(file)
     print(f"evaluating {model} with attributes {attributes}")
     data = load_pickle(file)
 
@@ -424,6 +425,24 @@ def zero_shot_evaluation(zero_shot_directory):
         pkl.dump(results, f)
 
     return results
+
+
+def single_sft_evaluation(single_sft_directory = "/scratch/tathagato/naacl/single_attribute_sft"):
+    experiment_paths = [(folder, os.path.join(single_sft_directory, folder, "results.pkl")) for folder in os.listdir(single_sft_directory) if os.path.isdir(os.path.join(single_sft_directory, folder))]
+    results = {}
+    for experiment, result_path in tqdm.tqdm(experiment_paths):
+        model_name = experiment.split("_")[0]
+        attributes = experiment.split("_")[1:]
+        model_results = evaluate(result_path, model = model_name, attributes = attributes)
+        results[experiment] = model_results
+    #save results
+    output_dir = "/scratch/tathagato/naacl/compiled_outputs"
+    os.makedirs(output_dir, exist_ok = True)
+    output_file = os.path.join(output_dir, "single_sft_results.pkl")
+    with open(output_file, "wb") as f:
+        pkl.dump(results, f)
+    return results
+
 
 
 def adapter_fusion_evaluation(adapter_fusion):

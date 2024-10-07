@@ -13,8 +13,8 @@ DEBUG = False
 experiment_names = list(config["experiments"].keys())
 
 # Set up GPU and experiment configurations
-gpu_capacity = 5  # Each GPU can run 5 experiments at a time
-num_gpus = 2
+gpu_capacity = 1  # Each GPU can run 5 experiments at a time
+num_gpus = 4
 experiments_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 processes_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 

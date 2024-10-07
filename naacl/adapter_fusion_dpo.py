@@ -8,7 +8,7 @@ import pickle as pkl
 from dataset import MACSUM
 import tqdm
 import time
-from utils import generate_text, train, evaluate, get_single_adapter_lora_model, merge_configs, load_peft_checkpoint, get_adapter_status, print_layerwise_details, load_fused_adapter_model
+from utils import generate_text, train, evaluate, get_single_adapter_lora_model, merge_configs, load_peft_checkpoint, get_adapter_status, print_layerwise_details, load_fused_adapter_model, load_fused_dpo_models
 from dataset import MACSUM
 import yaml
 from peft import LoraConfig, TaskType
@@ -18,7 +18,7 @@ import wandb
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config_path", type=str, default="/home2/tathagato/summarization/MACSUM/naacl/configs/adapter_fusion.yaml")
+    parser.add_argument("--config_path", type=str, default="/home2/tathagato/summarization/MACSUM/naacl/configs/adapter_fusion_dpo.yaml")
     parser.add_argument("--experiment_name", type=str, default="llama_length_and_extractiveness_test")
     parser.add_argument("--debug", action="store_true")
 
@@ -33,6 +33,9 @@ if __name__ == "__main__":
     args.experiment_name = args.experiment_name + "_" + str(experiment_config["weights"][0]) + "_" + str(experiment_config["weights"][1]) + "_" + str(experiment_config["combination_type"])
     config['output_dir'] = os.path.join(config['output_dir'], args.experiment_name)
     os.makedirs(config['output_dir'], exist_ok=True)
+    if "test" in args.experiment_name:
+        args.debug = True
+        
 
     if args.debug:
         config['do_wandb'] = False
@@ -71,9 +74,10 @@ if __name__ == "__main__":
     w1, w2 = config["weights"][0], config["weights"][1]
     adapter_name = f"{old_attribute}_and_{new_attribute}_fused"
     #load the model
-    config['checkpoint_paths'] = [os.path.join(config['checkpoint_dirs'][0], f"best_model_{old_attribute}", old_attribute), os.path.join(config['checkpoint_dirs'][1], f"best_model_{new_attribute}", new_attribute)]
+    config['checkpoint_paths'] = config['checkpoint_dirs']
     print("loading from the checkpoints:\n", config['checkpoint_paths'][0],"\n", config['checkpoint_paths'][1])
-    model = load_fused_adapter_model(config, bnb_config, is_trainable = False, adapter_name = adapter_name, combination_type = config["combination_type"])
+    model = load_fused_dpo_models(config, bnb_config, is_trainable = False, adapter_name = adapter_name, combination_type = config["combination_type"])
+    get_adapter_status(model)
     print_layerwise_details(model)
 
 

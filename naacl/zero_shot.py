@@ -81,4 +81,5 @@ if __name__ == "__main__":
     save_path = os.path.join(config["output_dir"], args.experiment_name + ".pkl")
     with open(save_path, "wb") as f:
         pkl.dump(result_dict, f) 
+    print(f"Results saved at {save_path}")
 

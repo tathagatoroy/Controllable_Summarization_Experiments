@@ -5,8 +5,8 @@
 #SBATCH --qos=kl4
 #SBATCH --mem-per-cpu=4000M
 #SBATCH --time=4-00:00:00
-#SBATCH --job-name=adapter_fusion
-#SBATCH --output=/home2/tathagato/summarization/MACSUM/naacl/logs/fusion.out
+#SBATCH --job-name=adapter_fusion_dpo_plus_multi_attribute
+#SBATCH --output=/home2/tathagato/summarization/MACSUM/naacl/logs/fusion_dpo_train.out
 #SBATCH --partition=lovelace
 #SBATCH --mail-user=tathagato.roy@research.iiit.ac.in
 #SBATCH --mail-type=BEGIN
@@ -18,8 +18,9 @@
 #SBATCH -w gnode121
 export NCCL_P2P_DISABLE=1
 
-python run_all_dpo_single_attribute.py
-
+python run_all_sft_multi_attribute_multi_adapter.py
+echo "done first part"
+python run_all_weighted_adapter_fusion_dpo.py
 echo "Completed"
 
 

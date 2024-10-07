@@ -17,7 +17,7 @@ global:
   max_new_tokens : 500
   num_return_sequences : 1
   do_sample : True
-  output_dir : /scratch/tathagato/naacl/adapter_fusion
+  output_dir : /scratch/tathagato/naacl/adapter_fusion_sft
   max_seq_len : 2048
   batch_size : 4
   learning_rate : 0.00005

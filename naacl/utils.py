@@ -13,6 +13,62 @@ import os
 import wandb
 from peft import get_peft_config, get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftConfig, PeftModel
 
+
+
+
+def set_adapter_requires_grad(model, adapters_requires_grad_false, adapters_requires_grad_true):
+    for name , param in model.named_parameters():
+        for adapter_name in adapters_requires_grad_false:
+            if adapter_name in name:
+                param.requires_grad = False
+        for adapter_name in adapters_requires_grad_true:
+            if adapter_name in name:
+                param.requires_grad = True
+    return model
+
+def get_latest_checkpoint_path(checkpoint_dir, adapter_name):
+    checkpoint_list = [f for f in os.listdir(checkpoint_dir) if os.path.isdir(os.path.join(checkpoint_dir, f))]
+    step_counter = [int(checkpoint.split("-")[-1]) for checkpoint in checkpoint_list]
+    latest_checkpoint = checkpoint_list[step_counter.index(max(step_counter))]
+    latest_checkpoint = os.path.join(checkpoint_dir, latest_checkpoint, adapter_name)
+    return latest_checkpoint
+def load_latest_checkpoint(checkpoint_dir, quantization_config, is_trainable = False, adapter_name = None):
+    """ load the latest checkpoint """
+    checkpoint_list = [f for f in os.listdir(checkpoint_dir) if os.path.isdir(os.path.join(checkpoint_dir, f))]
+    step_counter = [int(checkpoint.split("-")[-1]) for checkpoint in checkpoint_list]
+    latest_checkpoint = checkpoint_list[step_counter.index(max(step_counter))]
+    latest_checkpoint = os.path.join(checkpoint_dir, latest_checkpoint, adapter_name)
+    print(f"loading the latest checkpoint {latest_checkpoint}")
+    model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
+    model = PeftModel.from_pretrained(model, latest_checkpoint, adapter_name= adapter_name, is_trainable= is_trainable)
+    return model 
+
+def load_fused_dpo_models(config, quantization_config, is_trainable = False, adapter_name = None, combination_type = 'linear'):
+    latest_checkpont_1 = get_latest_checkpoint_path(config['checkpoint_paths'][0], config['attributes'][0])
+    latest_checkpont_2 = get_latest_checkpoint_path(config['checkpoint_paths'][1], config['attributes'][1])
+    model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
+    model = PeftModel.from_pretrained(model, latest_checkpont_1, adapter_name=config['attributes'][0], is_trainable= is_trainable)
+    print("loading the first adapter from", latest_checkpont_1)
+    get_adapter_status(model)
+    model.load_adapter(latest_checkpont_2, adapter_name= config['attributes'][1], is_trainable= is_trainable)
+    print("loading the second adapter from", latest_checkpont_2)
+    get_adapter_status(model)
+    model.add_weighted_adapter(
+    adapters=config['attributes'],
+    weights=config['weights'],
+    adapter_name=adapter_name,
+    combination_type=combination_type
+    )
+    print("loading the fused adapter")
+    model.set_adapter(adapter_name)
+    get_adapter_status(model)
+    print(model.active_adapters)
+
+    return model
+
+
+
+
 def load_fused_adapter_model(config, quantization_config, is_trainable = False, adapter_name = None, combination_type = 'linear'):
 
     model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
@@ -38,6 +94,24 @@ def load_fused_adapter_model(config, quantization_config, is_trainable = False, 
     return model
 
 
+def compare_two_models(model1, model2):
+    #see if the two models are the same
+    state_dict_1 = model1.state_dict()
+    state_dict_2 = model2.state_dict()
+
+    #check if all the keys are the same
+    keys_1 = set(state_dict_1.keys())
+    keys_2 = set(state_dict_2.keys())
+    print("key 1 - key 2", list(keys_1 - keys_2))
+    print("key 2 - key 1", list(keys_2 - keys_1))
+
+    if keys_1 == keys_2:
+        print("keys are the same")
+        for key in keys_1:
+            if not torch.equal(state_dict_1[key], state_dict_2[key]):
+                print(f"key {key} is different")
+            else:
+                print(torch.allclose(state_dict_1[key], state_dict_2[key]))
 def load_peft_checkpoint(config, quantization_config, checkpoint_path, is_trainable = False, adapter_name = None):
     """ load a peft checkpoint """
     peft_config = PeftConfig.from_pretrained(checkpoint_path)
@@ -172,6 +246,9 @@ def generate_text(model, dataset, tokenizer = None, config=None):
             
             # Print the generated text for each item
             #print("generated_text:", generated_text)
+            del new_item, item, output, decoded_text, generation_ids, generated_text, prompt
+            torch.cuda.empty_cache()
+
     
     return result_dict
 
@@ -432,6 +509,7 @@ def train(model, tokenizer, train_dataset, eval_dataset, config=None, device=0, 
                         model_save_path = os.path.join(config['output_dir'], f"model_{step}_{adapter_name}")
                         model.save_pretrained(model_save_path)
                         print(f"Model saved at {model_save_path}")
+                         
 
                     else:
                         model_save_path = os.path.join(config['output_dir'], f"model_{step}_{adapter_name}.pt")

@@ -5,16 +5,23 @@ import os
 
 os.chdir("/home2/tathagato/summarization/MACSUM/naacl")
 # Load the config file
-config_path = "/home2/tathagato/summarization/MACSUM/naacl/configs/joint_multi_attribute_sft.yaml"
+config_path = "/home2/tathagato/summarization/MACSUM/naacl/configs/multi_attribute_multi_adapter_sft.yaml"
 with open(config_path, "r") as f:
     config = yaml.safe_load(f)
 
 DEBUG = False
 experiment_names = list(config["experiments"].keys())
+#filter out the experiments that have names which contain test
+experiment_names = [experiment for experiment in experiment_names if "test" not in experiment]
+for experiment in experiment_names:
+    print(experiment)
+
+
+print("number of experiments to run", len(experiment_names))
 
 # Set up GPU and experiment configurations
 gpu_capacity = 1  # Each GPU can run 5 experiments at a time
-num_gpus = 2
+num_gpus = 4  # Number of GPUs available
 experiments_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 processes_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 
@@ -25,9 +32,9 @@ def run_experiment(experiment, gpu_id):
     print("Starting experiment", experiment, "on GPU", gpu_id)
     
     if DEBUG:
-        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python multi_attribute_joint_training_sft.py --experiment_name {experiment} --debug > {log_file} 2>&1"
+        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python multi_attribute_multi_adapter_sft.py --experiment_name {experiment} --debug > {log_file} 2>&1"
     else:
-        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python multi_attribute_joint_training_sft.py --experiment_name {experiment} > {log_file} 2>&1"
+        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python multi_attribute_multi_adapter_sft.py --experiment_name {experiment} > {log_file} 2>&1"
     
     process = subprocess.Popen(command, shell=True)
     print("Started experiment", experiment, "on GPU", gpu_id, "with PID", process.pid)

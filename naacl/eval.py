@@ -415,7 +415,8 @@ def evaluate(file, supported_evaluation = ['length','extractiveness', 'topic'], 
 def zero_shot_evaluation(zero_shot_directory):
     files = [os.path.join(zero_shot_directory, file) for file in os.listdir(zero_shot_directory) if file.endswith(".pkl")]
     results = {}
-    for file in files:
+    for file in tqdm.tqdm(files):
+        print(f"evaluating {file}")
         model_results = evaluate(file)
         results[file] = model_results
     #save results

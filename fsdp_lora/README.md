@@ -1,3 +1,5 @@
+originally forked from [here](https://github.com/AnswerDotAI/fsdp_qlora/tree/main)
+
 # fsdp_qlora
 
 Training LLMs with Quantized LoRA + FSDP.

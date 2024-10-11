@@ -5,7 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
-
+/home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code/data 
+/home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code/resources
 # Distribution / packaging
 .Python
 build/

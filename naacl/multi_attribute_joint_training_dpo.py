@@ -5,25 +5,24 @@ import argparse
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import sys
 import pickle as pkl
+from dataset import MACSUM
 import tqdm
 import time
-from utils import generate_text, get_single_adapter_lora_model, merge_configs, load_peft_checkpoint, get_adapter_status, print_layerwise_details, load_dpo_adapter_model
-from dataset import dpo_dataset, get_huggingface_dataset, MACSUM
+from utils import generate_text, train, evaluate, get_single_adapter_lora_model, merge_configs, load_peft_checkpoint, get_adapter_status, print_layerwise_details
+from dataset import MACSUM, dpo_dataset, get_huggingface_dataset
 import yaml
 from peft import LoraConfig, TaskType
 import wandb
 from trl import DPOConfig, DPOTrainer
-
-#do not parallelize the tokenizer 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-#CUDA_VISIBLE_DEVICES=0, python single_attribute_dpo.py --debug > logs/sft_single.txt
-#CUDA_VISIBLE_DEVICES=0, python single_attribute_dpo.py | tee output.txt
+#python multi_attribute_joint_training_dpo.py --debug > logs/sft_multi.txt
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config_path", type=str, default="/home2/tathagato/summarization/MACSUM/naacl/configs/single_attribute_dpo.yaml")
-    parser.add_argument("--experiment_name", type=str, default="llama_length")
+    parser.add_argument("--config_path", type=str, default="/home2/tathagato/summarization/MACSUM/naacl/configs/joint_multi_attribute_dpo.yaml")
+    parser.add_argument("--experiment_name", type=str, default="llama_length_and_extractiveness_test")
     parser.add_argument("--debug", action="store_true")
 
     args = parser.parse_args()
@@ -38,20 +37,15 @@ if __name__ == "__main__":
     config['output_dir'] = os.path.join(config['output_dir'], args.experiment_name)
     os.makedirs(config['output_dir'], exist_ok=True)
 
-    if "test" in args.experiment_name:
-        args.debug = True
-
     if args.debug:
         config['do_wandb'] = False
         config['logging_steps'] = 1
         config['eval_interval'] = 1
 
     #setup wandb 
-    report_to = "None"
     if config['do_wandb'] :
         wandb.init(project = config["wandb_project"], name = args.experiment_name)
         wandb.config.update(config)
-        report_to = "wandb"
 
     #setup the bnb config
     bnb_compute_dtype = torch.bfloat16 if config["bnb_4bit_compute_dtype"] == "bfloat16" else torch.float16
@@ -80,19 +74,14 @@ if __name__ == "__main__":
         inference_mode = False 
         
     )
-    assert len(experiment_config["attributes"]) == 1, "Only single attribute supported"
-    model = get_single_adapter_lora_model(model, lora_config, experiment_config["attributes"][0])
-
-    
-    print(model)
-    get_adapter_status(model)
-    model.print_trainable_parameters()
+    assert len(experiment_config["attributes"]) > 1, "there needs to be more than one attribute"
+    adapter_name = "_and_".join(experiment_config["attributes"])
+    model = get_single_adapter_lora_model(model, lora_config, adapter_name)
 
 
 
     #load the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(experiment_config["model_id"])
-    tokenizer.pad_token = tokenizer.eos_token
 
     #load the dataset
     if args.debug:
@@ -112,16 +101,37 @@ if __name__ == "__main__":
             model_type= experiment_config["model_type"],
             size = 16
             )
-        #for testing we will use MACSUM dataset
-        test_dataset = MACSUM(
-            dataset_path = config["test_dataset_path"],
-            attributes = experiment_config["attributes"],
-            tokenizer = tokenizer,
-            mode = "inference",
-            size = 4,
-            max_seq_len = config["max_seq_len"],
-            model_type = experiment_config["model_type"]
-        )
+        #assumes one two attributes for now 
+        test_datasets = [
+            MACSUM(
+                dataset_path = config["test_dataset_path"],
+                attributes = experiment_config["attributes"],
+                tokenizer = tokenizer,
+                mode = "inference",
+                size = 4,
+                max_seq_len = config["max_seq_len"],
+                model_type = experiment_config["model_type"]
+            ),
+            MACSUM(
+                dataset_path= config["test_dataset_path"],
+                attributes = experiment_config["attributes"][:1],
+                tokenizer = tokenizer,
+                mode = "inference",
+                size = 4,
+                max_seq_len = config["max_seq_len"],
+                model_type = experiment_config["model_type"]
+            ),
+            MACSUM(
+                dataset_path= config["test_dataset_path"],
+                attributes = experiment_config["attributes"][1:],
+                tokenizer = tokenizer,
+                mode = "inference",
+                size = 4,
+                max_seq_len = config["max_seq_len"],
+                model_type = experiment_config["model_type"]
+            )
+        ]
+
     else:
         train_dataset = dpo_dataset(
             dataset_path= config["train_dataset_path"],
@@ -129,8 +139,8 @@ if __name__ == "__main__":
             tokenizer = tokenizer,
             mode = "train",
             model_type= experiment_config["model_type"],
-            size = -1
-        )
+            size = -1        
+            )
         val_dataset = dpo_dataset(
             dataset_path= config["val_dataset_path"],
             attributes = experiment_config["attributes"],
@@ -138,8 +148,9 @@ if __name__ == "__main__":
             mode = "train",
             model_type= experiment_config["model_type"],
             size = -1
-        )
-        test_dataset = MACSUM(
+            )
+        test_datasets = [
+            MACSUM(
             dataset_path = config["test_dataset_path"],
             attributes = experiment_config["attributes"],
             tokenizer = tokenizer,
@@ -147,30 +158,38 @@ if __name__ == "__main__":
             size = -1,
             max_seq_len = config["max_seq_len"],
             model_type = experiment_config["model_type"]
-        )
+            ),
+            MACSUM(
+                dataset_path= config["test_dataset_path"],
+                attributes = experiment_config["attributes"][:1],
+                tokenizer = tokenizer,
+                mode = "inference",
+                size = -1,
+                max_seq_len = config["max_seq_len"],
+                model_type = experiment_config["model_type"]
+                ),
+            MACSUM(
+                dataset_path= config["test_dataset_path"],
+                attributes = experiment_config["attributes"][1:],
+                tokenizer = tokenizer,
+                mode = "inference",
+                size = -1,
+                max_seq_len = config["max_seq_len"],
+                model_type = experiment_config["model_type"]
+            )
+        ]
     
     print(f"Length of train dataset: {len(train_dataset)}")
     print(f"Length of val dataset: {len(val_dataset)}")
-    print(f"Length of test dataset: {len(test_dataset)}")
+    for i, test_dataset in enumerate(test_datasets):
+        print(f"Length of test dataset with attributes {test_dataset.attributes} : {len(test_dataset)}")
+    print(model)
+    get_adapter_status(model)
+    model.print_trainable_parameters()
 
     train_dataset = get_huggingface_dataset(train_dataset)
     val_dataset = get_huggingface_dataset(val_dataset)
-
-
-    # num_examples = 5
-
-    # for i in range(num_examples):
-
-    #     example = train_dataset[i]
-    #     for key in example.keys():
-    #         print(f"{key}: {example[key]}")
-    #         print("\n")
-    #     print("----------------------------------")
-
     tokenizer.pad_token = tokenizer.eos_token
-    adapter_name = experiment_config["attributes"][0]
-    #model = load_dpo_adapter_model(config, quantization_config=bnb_config,adapter_name=adapter_name)
-
     training_args = DPOConfig(
         output_dir= config['output_dir'], 
         learning_rate= config['learning_rate'],
@@ -207,43 +226,31 @@ if __name__ == "__main__":
         eval_dataset=val_dataset
         )
     trainer.train()
+
     trainer.evaluate()
 
-    # dataloader = trainer.get_train_dataloader()
-    # tokenizer = trainer.tokenizer
+    #save the current checkpoint as the best
 
-    # batch = next(iter(dataloader))
-    # print(batch.keys())
-    # prompt = batch['prompt'][0]
-    # chosen = batch['chosen'][0]
-    # rejected = batch['rejected'][0]
-    # prompt_input_ids = batch['prompt_input_ids'][0]
-    # chosen_input_ids = batch['chosen_input_ids'][0]
-    # rejected_input_ids = batch['rejected_input_ids'][0]
-
-    
-
-    # import code; code.interact(local=locals())
-    # exit()
-
-
-
-    
 
     print("training done")
+
+    #loading the best checkpoint
+    #delete the model from memory and free up the memory 
+
 
     #print the active adapter
     get_adapter_status(model)
 
-    result_dict = generate_text(model, test_dataset, tokenizer = tokenizer, config = config)
-    print("done generating text")
+    for i, test_dataset in tqdm.tqdm(enumerate(test_datasets)):
+        print(f"generating on test dataset with attributes {test_dataset.attributes}")
+        result_dict = generate_text(model, test_dataset, tokenizer = tokenizer, config = config)
+        print("done generating text for test dataset with attributes ", test_dataset.attributes)
+        result_adapter_name = "_and_".join(test_dataset.attributes)
+        with open(os.path.join(config["output_dir"], f"model_{adapter_name}_results_{result_adapter_name}.pkl"), "wb") as f:
+            pkl.dump(result_dict, f)
 
-    #save the results
-    with open(os.path.join(config["output_dir"], "results.pkl"), "wb") as f:
-        pkl.dump(result_dict, f)
-    print("done saving results at ", os.path.join(config["output_dir"], "results.pkl"))
+        print("done saving results at ", os.path.join(config["output_dir"], f"model_{adapter_name}_results_{result_adapter_name}.pkl"))
 
-    #setup wandb 
 
 
 

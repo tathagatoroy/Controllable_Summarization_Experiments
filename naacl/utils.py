@@ -43,6 +43,20 @@ def load_latest_checkpoint(checkpoint_dir, quantization_config, is_trainable = F
     model = PeftModel.from_pretrained(model, latest_checkpoint, adapter_name= adapter_name, is_trainable= is_trainable)
     return model 
 
+
+def load_dpo_adapter_model(config, quantization_config, is_trainable = False, adapter_name = None):
+    if adapter_name is None:
+        adapter_name = config['attributes'][0]
+    
+    latest_checkpont_1 = get_latest_checkpoint_path(config['checkpoint_paths'][0], config['attributes'][0])
+    model = AutoModelForCausalLM.from_pretrained(config['model_id'], quantization_config= quantization_config, use_cache = False, device_map = "cuda:0")
+    model = PeftModel.from_pretrained(model, latest_checkpont_1, adapter_name=adapter_name, is_trainable= is_trainable)
+    print("loaded the first adapter from", latest_checkpont_1)
+    get_adapter_status(model)
+    model.set_adapter(adapter_name)
+    return model
+
+
 def load_fused_dpo_models(config, quantization_config, is_trainable = False, adapter_name = None, combination_type = 'linear'):
     latest_checkpont_1 = get_latest_checkpoint_path(config['checkpoint_paths'][0], config['attributes'][0])
     latest_checkpont_2 = get_latest_checkpoint_path(config['checkpoint_paths'][1], config['attributes'][1])

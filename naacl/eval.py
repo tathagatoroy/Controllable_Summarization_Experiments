@@ -369,10 +369,10 @@ def evaluate(file, supported_evaluation = ['length','extractiveness', 'topic'], 
         references = [item['output'] for item in data.values()]
         articles = [item['input'] for item in data.values()]
         control_values = [item['control_value'][0] for item in data.values()]
-        assert len(candidates) == len(references) == len(articles) == len(control_values)
+        assert len(candidates) == len(references) == len(articles) == len(control_values),  f"Error in length mismatch candidates {len(candidates)} references {len(references)} articles {len(articles)} control_values {len(control_values)}"
         print("length of data is ", len(candidates))
         if attributes[0] in supported_evaluation:
-            outputs = get_results(file, candidates, references, articles, attributes[0], control_values),  f"Error in length mismatch candidates {len(candidates)} references {len(references)} articles {len(articles)} control_values {len(control_values)}"
+            outputs = get_results(file, candidates, references, articles, attributes[0], control_values)
             return {attributes[0] : outputs}
         else:
             print(f"{attributes[0]} is not supported for evaluation")

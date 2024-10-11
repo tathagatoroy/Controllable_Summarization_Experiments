@@ -35,13 +35,13 @@ global:
 
 experiments :
 
-  llama_length_and_extractiveness_test:
-    model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['length', 'extractiveness']
-    model_type : llama
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/llama_length", "/scratch/tathagato/naacl/single_attribute_dpo/llama_extractiveness"]
-    weights : [0.5, 0.5]
-    combination_type : "linear"
+  # llama_length_and_extractiveness_test:
+  #   model_id : akjindal53244/Llama-3.1-Storm-8B
+  #   attributes : ['length', 'extractiveness']
+  #   model_type : llama
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/llama_length", "/scratch/tathagato/naacl/single_attribute_dpo/llama_extractiveness"]
+  #   weights : [0.5, 0.5]
+  #   combination_type : "linear"
 
   llama_length_and_extractiveness_0.5:
     model_id : akjindal53244/Llama-3.1-Storm-8B
@@ -116,76 +116,76 @@ experiments :
     weights : [0.67, 0.33]
     combination_type : "linear"
   
-  mistral_length_and_extractiveness_0.5:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length', 'extractiveness']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness"]
-    weights : [0.5, 0.5]
-    combination_type : "linear"
+  # mistral_length_and_extractiveness_0.5:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['length', 'extractiveness']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness"]
+  #   weights : [0.5, 0.5]
+  #   combination_type : "linear"
   
-  mistral_length_and_extractiveness_0.33:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length', 'extractiveness']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness"]
-    weights : [0.33, 0.67]
-    combination_type : "linear"
+  # mistral_length_and_extractiveness_0.33:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['length', 'extractiveness']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness"]
+  #   weights : [0.33, 0.67]
+  #   combination_type : "linear"
 
-  mistral_length_and_extractiveness_0.67:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length', 'extractiveness']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness"]
-    weights : [0.67, 0.33]
-    combination_type : "linear"
+  # mistral_length_and_extractiveness_0.67:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['length', 'extractiveness']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness"]
+  #   weights : [0.67, 0.33]
+  #   combination_type : "linear"
   
-  mistral_length_and_topic_0.5:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length', 'topic']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
-    weights : [0.5, 0.5]
-    combination_type : "linear"
+  # mistral_length_and_topic_0.5:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['length', 'topic']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
+  #   weights : [0.5, 0.5]
+  #   combination_type : "linear"
   
-  mistral_length_and_topic_0.33:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length', 'topic']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
-    weights : [0.33, 0.67]
-    combination_type : "linear"
+  # mistral_length_and_topic_0.33:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['length', 'topic']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
+  #   weights : [0.33, 0.67]
+  #   combination_type : "linear"
   
-  mistral_length_and_topic_0.67:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length', 'topic']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
-    weights : [0.67, 0.33]
-    combination_type : "linear"
+  # mistral_length_and_topic_0.67:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['length', 'topic']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_length", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
+  #   weights : [0.67, 0.33]
+  #   combination_type : "linear"
   
-  mistral_extractiveness_and_topic_0.5:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['extractiveness', 'topic']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
-    weights : [0.5, 0.5]
-    combination_type : "linear"
+  # mistral_extractiveness_and_topic_0.5:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['extractiveness', 'topic']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
+  #   weights : [0.5, 0.5]
+  #   combination_type : "linear"
   
-  mistral_extractiveness_and_topic_0.33:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['extractiveness', 'topic']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
-    weights : [0.33, 0.67]
-    combination_type : "linear"
+  # mistral_extractiveness_and_topic_0.33:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['extractiveness', 'topic']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
+  #   weights : [0.33, 0.67]
+  #   combination_type : "linear"
   
-  mistral_extractiveness_and_topic_0.67:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['extractiveness', 'topic']
-    model_type : mistral
-    checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
-    weights : [0.67, 0.33]
-    combination_type : "linear"
+  # mistral_extractiveness_and_topic_0.67:
+  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
+  #   attributes : ['extractiveness', 'topic']
+  #   model_type : mistral
+  #   checkpoint_dirs : ["/scratch/tathagato/naacl/single_attribute_dpo/mistral_extractiveness", "/scratch/tathagato/naacl/single_attribute_dpo/mistral_topic"]
+  #   weights : [0.67, 0.33]
+  #   combination_type : "linear"
   
   

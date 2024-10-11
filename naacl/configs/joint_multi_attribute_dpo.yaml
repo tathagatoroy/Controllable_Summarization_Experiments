@@ -17,11 +17,11 @@ global:
   max_new_tokens : 500
   num_return_sequences : 1
   do_sample : True
-  output_dir : /scratch/tathagato/naacl/single_attribute_dpo
+  output_dir : /scratch/tathagato/naacl/joint_mult_attribute_dpo
   max_seq_len : 2048
   batch_size : 8
   learning_rate : 0.000005
-  gradient_accumulation_steps : 8 
+  gradient_accumulation_steps : 8
   num_epochs : 2
   warmup_ratio : 0.1
   max_grad_norm : 1.0
@@ -34,65 +34,73 @@ global:
   optim : "adamw_torch_fused"
   lr_scheduler_type : "cosine"
   ddp_find_unused_parameters : False
-  max_prompt_length : 19000
-
-
-
+  max_prompt_length : 1900
 experiments :
-
-
-  # llama_length_test:
-  #   model_id : akjindal53244/Llama-3.1-Storm-8B
-  #   attributes : ['length']
-  #   model_type : llama
-    
-  # mistral_length_test:
-  #   model_id : mistralai/Mistral-7B-Instruct-v0.3
-  #   attributes : ['length']
-  #   model_type : mistral
-
-
-  llama_length:
+  llama_length_and_extractiveness_test:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['length']
+    attributes : ['length', 'extractiveness']
     model_type : llama
 
-
-  llama_extractiveness:
+  llama_length_and_extractiveness:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['extractiveness']
+    attributes : ['length', 'extractiveness']
     model_type : llama
 
-  llama_topic:
+  llama_length_and_topic:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['topic']
+    attributes : ['length', 'topic']
     model_type : llama
-
-  llama_specificity:
+  
+  llama_length_and_specificity:
     model_id : akjindal53244/Llama-3.1-Storm-8B
-    attributes : ['specificity']
+    attributes : ['length', 'specificity']
     model_type : llama
-
-  mistral_length:
+  
+  llama_extractiveness_and_topic:
+    model_id : akjindal53244/Llama-3.1-Storm-8B
+    attributes : ['extractiveness', 'topic']
+    model_type : llama
+  
+  llama_extractiveness_and_specificity:
+    model_id : akjindal53244/Llama-3.1-Storm-8B
+    attributes : ['extractiveness', 'specificity']
+    model_type : llama
+  
+  llama_topic_and_specificity:
+    model_id : akjindal53244/Llama-3.1-Storm-8B
+    attributes : ['topic', 'specificity']
+    model_type : llama
+  
+  mistral_length_and_extractiveness:
     model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['length']
-    model_type : mistral
-
-  mistral_extractiveness:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['extractiveness']
+    attributes : ['length', 'extractiveness']
     model_type : mistral
   
-  mistral_topic:
+  mistral_length_and_topic:
     model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['topic']
-    model_type : mistral
-
-  mistral_specificity:
-    model_id : mistralai/Mistral-7B-Instruct-v0.3
-    attributes : ['specificity']
+    attributes : ['length', 'topic']
     model_type : mistral
   
+  mistral_length_and_specificity:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['length', 'specificity']
+    model_type : mistral
+  
+  mistral_extractiveness_and_topic:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['extractiveness', 'topic']
+    model_type : mistral
+  
+  mistral_extractiveness_and_specificity:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['extractiveness', 'specificity']
+    model_type : mistral
+  
+  mistral_topic_and_specificity:
+    model_id : mistralai/Mistral-7B-Instruct-v0.3
+    attributes : ['topic', 'specificity']
+    model_type : mistral
+
 
 
   

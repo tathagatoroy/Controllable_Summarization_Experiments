@@ -18,10 +18,16 @@
 #SBATCH -w gnode121
 export NCCL_P2P_DISABLE=1
 
-python run_all_sft_multi_attribute_multi_adapter.py
-echo "done first part"
-python run_all_weighted_adapter_fusion_dpo.py
+# python run_all_dpo_single_attribute.py
+# echo "done first part"
+# python run_all_dpo_joint_multi_attribute.py
+# echo "done second part"
+# python run_all_weighted_adapter_fusion_dpo.py
+
+
+python run_all_dpo_multi_attribute_single_adapter_continued.py
 echo "Completed"
+python run_all_dpo_multi_attribute_multi_attribute.py
 
 
 

@@ -5,11 +5,11 @@ import os
 
 os.chdir("/home2/tathagato/summarization/MACSUM/naacl")
 # Load the config file
-config_path = "/home2/tathagato/summarization/MACSUM/naacl/configs/adapter_fusion_dpo.yaml"
+config_path = "/home2/tathagato/summarization/MACSUM/naacl/configs/multi_attribute_multi_adapter_dpo.yaml"
 with open(config_path, "r") as f:
     config = yaml.safe_load(f)
 
-DEBUG = False 
+DEBUG = False
 experiment_names = list(config["experiments"].keys())
 #filter out the experiments that have names which contain test
 experiment_names = [experiment for experiment in experiment_names if "test" not in experiment]
@@ -20,7 +20,7 @@ for experiment in experiment_names:
 print("number of experiments to run", len(experiment_names))
 
 # Set up GPU and experiment configurations
-gpu_capacity = 3  # Each GPU can run 5 experiments at a time
+gpu_capacity = 1  # Each GPU can run 5 experiments at a time
 num_gpus = 4  # Number of GPUs available
 experiments_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 processes_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
@@ -28,13 +28,13 @@ processes_per_gpu = {gpu_id: [] for gpu_id in range(num_gpus)}
 # Function to run a single experiment
 def run_experiment(experiment, gpu_id):
     os.makedirs("./logs", exist_ok=True)
-    log_file = f"./logs/{experiment}_gpu{gpu_id}.log"
+    log_file = f"./logs/multi_attribute_multiple_adapter_{experiment}_gpu{gpu_id}.log"
     print("Starting experiment", experiment, "on GPU", gpu_id)
     
     if DEBUG:
-        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python adapter_fusion_dpo.py --experiment_name {experiment} --debug > {log_file} 2>&1"
+        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python multi_attribute_multi_adapter_dpo.py --experiment_name {experiment} --debug > {log_file} 2>&1"
     else:
-        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python adapter_fusion_dpo.py --experiment_name {experiment} > {log_file} 2>&1"
+        command = f"CUDA_VISIBLE_DEVICES={gpu_id} python multi_attribute_multi_adapter_dpo.py --experiment_name {experiment} > {log_file} 2>&1"
     
     process = subprocess.Popen(command, shell=True)
     print("Started experiment", experiment, "on GPU", gpu_id, "with PID", process.pid)

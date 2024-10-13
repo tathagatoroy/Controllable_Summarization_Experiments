@@ -23,6 +23,52 @@ import glob
 nltk.download('averaged_perceptron_tagger')
 nltk.download('stopwords')
 st_words = stopwords.words('english')
+sys.path.insert(0,"/home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code")
+from speciteller import process_strings_parallel
+
+
+def get_specificity_scores(texts):
+    return process_strings_parallel(texts)
+
+def get_specificity_results(candidates, references, articles, control_values):
+    rouge_results = get_rouge_score(candidates, references)
+    specificity_scores = get_specificity_scores(candidates)
+    gold_specificity_scores = get_specificity_scores(references)
+    rouge_1s = [result['rouge1']['f1'] for result in rouge_results['results']]
+    rouge_2s = [result['rouge2']['f1'] for result in rouge_results['results']]
+    rouge_3s = [result['rouge3']['f1'] for result in rouge_results['results']]
+    rouge_Ls = [result['rougeL']['f1'] for result in rouge_results['results']]
+    final_results = {}
+    final_results['rouge_raw'] = rouge_results
+    final_results['overall'] = {'specificity' : np.mean(specificity_scores), 'gold_specificity' : np.mean(gold_specificity_scores), 'rouge1' : np.mean(rouge_1s), 'rouge2' : np.mean(rouge_2s), 'rouge3' : np.mean(rouge_3s), 'rougeL' : np.mean(rouge_Ls), 'number' : len(candidates)}
+    normal_indexes = [index for index, control_value in enumerate(control_values) if control_value == 'normal']
+    normal_specificity_scores = [specificity_scores[index] for index in normal_indexes]
+    normal_rouge1 = [rouge_1s[index] for index in normal_indexes]
+    normal_rouge2 = [rouge_2s[index] for index in normal_indexes]
+    normal_rouge3 = [rouge_3s[index] for index in normal_indexes]
+    normal_rougeL = [rouge_Ls[index] for index in normal_indexes]
+    gold_normal_specificity_scores = [gold_specificity_scores[index] for index in normal_indexes]
+    final_results['normal'] = {'specificity' : np.mean(normal_specificity_scores), 'gold_specificity' : np.mean(gold_normal_specificity_scores), 'rouge1' : np.mean(normal_rouge1), 'rouge2' : np.mean(normal_rouge2), 'rouge3' : np.mean(normal_rouge3), 'rougeL' : np.mean(normal_rougeL), 'number' : len(normal_indexes)}
+
+    high_indexes = [index for index, control_value in enumerate(control_values) if control_value == 'high']
+    high_specificity_scores = [specificity_scores[index] for index in high_indexes]
+    high_rouge1 = [rouge_1s[index] for index in high_indexes]
+    high_rouge2 = [rouge_2s[index] for index in high_indexes]
+    high_rouge3 = [rouge_3s[index] for index in high_indexes]
+    high_rougeL = [rouge_Ls[index] for index in high_indexes]
+    gold_high_specificity_scores = [gold_specificity_scores[index] for index in high_indexes]
+    final_results['high'] = {'specificity' : np.mean(high_specificity_scores), 'gold_specificity' : np.mean(gold_high_specificity_scores), 'rouge1' : np.mean(high_rouge1), 'rouge2' : np.mean(high_rouge2), 'rouge3' : np.mean(high_rouge3), 'rougeL' : np.mean(high_rougeL), 'number' : len(high_indexes)}
+    print("\n\nspecificity evaluation")
+    for key in final_results.keys():
+        if key == 'rouge_raw':
+            continue
+        print(f"--------------{key}----------------")
+        res = final_results[key]
+        for sub_key in res.keys():
+            print(f"{sub_key} : {res[sub_key]}")
+        print("-------------------------------------------------")
+    print("----------------------------------------------------------------------------------------")
+    return final_results
 
 def get_rouge_score(candidates , references):
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rouge3', 'rougeL'], use_stemmer=True)
@@ -245,7 +291,7 @@ def get_topic_results(candidates, references, articles, control_values):
 
 def get_extractiveness_results(candidates, references, articles, control_values):
     rouge_results = get_rouge_score(candidates, references)
-    article_referenced_rouge_results = get_rouge_score(articles, references)
+    article_referenced_rouge_results = get_rouge_score(candidates, articles)
     gold_article_referenced_rouge_results = get_rouge_score(articles, candidates)
     fragment_densities = [get_fragment_density(article, summary) for article, summary in zip(articles, candidates)]
     gold_fragment_densities = [get_fragment_density(article, reference) for article, reference in zip(articles, references)]

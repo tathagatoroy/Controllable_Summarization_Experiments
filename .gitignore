@@ -7,7 +7,10 @@ __pycache__/
 *.so
 /home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code/data 
 /home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code/resources
-/home2/tathagato/summarization/MACSUM/naacl/speciteller/cotraining_models
+**openai_outputs
+**cotraining_models
+**new_output
+**resources
 # Distribution / packaging
 .Python
 build/

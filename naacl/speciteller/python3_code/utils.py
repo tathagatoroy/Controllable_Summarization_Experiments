@@ -9,7 +9,7 @@ import gzip
 import numpy as np
 
 
-RT = "/Users/prudhvi/Desktop/workspace/speciteller_experiments/"
+RT = "/home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code/"
 MPQAFILE = RT+"resources/subjclueslen1-HLTEMNLP05.tff"
 MRCFILE = RT+"resources/mrc2.dct"
 GENINQFILE = RT+"resources/inquirerTags.txt"

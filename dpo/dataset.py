@@ -231,7 +231,6 @@ class dpo_dataset(Dataset):
         prompt = system_prompt + f"<|start_header_id|>user<|end_header_id|> \n\n{instruction}\n{input_text}<|eot_id|>"
         chosen = f"<|start_header_id|>assistant<|end_header_id|>\n\n{chosen}<|eot_id|>"
         rejected = f"<|start_header_id|>assistant<|end_header_id|>\n\n{rejected}<|eot_id|>"
-        inference = prompt + f"<|start_header_id|>assistant<|end_header_id|>\n\n"
         return prompt, chosen, rejected, inference
     
     def format_dpo_data_mistral(self, instruction, input_text , chosen, rejected):

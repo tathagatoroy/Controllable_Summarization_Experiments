@@ -161,8 +161,7 @@ if __name__ == "__main__":
             ds[key] = ds[key].select(range(50))
 
     def process(row):
-        row["prompt"] = tokenizer.apply_chat_template(row["chosen"][:-1], tokenize=False)
-        print(row['chosen'])
+        row["prompt"] = tokenizer.apply_chat_template(row["prompt"][:-1], tokenize=False)
         row["chosen"] = tokenizer.apply_chat_template([row["chosen"][-1]], tokenize=False)
         row["rejected"] = tokenizer.apply_chat_template([row["rejected"][-1]], tokenize=False)
         return row

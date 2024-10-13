@@ -182,16 +182,59 @@ if __name__ == "__main__":
     ################
     # Training
     ################
-    with init_context:
-        trainer = DPOTrainer(
-            model,
-            ref_model,
-            args=training_args,
-            train_dataset=train_dataset,
-            tokenizer=tokenizer,
-            peft_config=peft_config,
-            callbacks=[RichProgressCallback] if TRL_USE_RICH else None,
-        )
+    # with init_context:
+    #     trainer = DPOTrainer(
+    #         model,
+    #         ref_model,
+    #         args=training_args,
+    #         train_dataset=train_dataset,
+    #         tokenizer=tokenizer,
+    #         peft_config=peft_config,
+    #         callbacks=[RichProgressCallback] if TRL_USE_RICH else None,
+    #     )
+    #     dataloader = trainer.get_train_dataloader()
+    #     tokenizer = trainer.tokenizer
+    #     batch = next(iter(dataloader))
+    #     prompt = batch['prompt'][0]
+    #     chosen = batch['chosen'][0]
+    #     rejected = batch['rejected'][0]
+
+    #     print("prompt:")
+    #     print(prompt)
+    #     print("\n\n")
+    #     print("chosen:")
+    #     print(chosen)
+    #     print("\n\n")
+    #     print("rejected:")
+    #     print(rejected)
+    #     print("\n\n")
+
+    #     print("input_ids")
+    #     prompt_input_id = batch['prompt_input_ids'][0]
+    #     chosen_input_id = batch['chosen_input_ids'][0]
+    #     rejected_input_id = batch['rejected_input_ids'][0]
+    #     print("prompt_input_id")
+    #     print("first without special tokens")
+    #     print(tokenizer.decode(prompt_input_id, skip_special_tokens=True))
+    #     print("first with special tokens")
+    #     print(tokenizer.decode(prompt_input_id, skip_special_tokens=False))
+    #     print("\n\n")
+    #     print("chosen_input_id")
+    #     print("first without special tokens")
+    #     print(tokenizer.decode(chosen_input_id, skip_special_tokens=True))
+    #     print("first with special tokens")
+    #     print(tokenizer.decode(chosen_input_id, skip_special_tokens=False))
+    #     print("\n\n")
+    #     print("rejected_input_id")
+    #     print("first without special tokens")
+    #     print(tokenizer.decode(rejected_input_id, skip_special_tokens=True))
+    #     print("first with special tokens")
+    #     print(tokenizer.decode(rejected_input_id, skip_special_tokens=False))
+    #     print("\n\n")
+    #     exit()
+
+
+        
 
 
     trainer.train()

@@ -24,7 +24,7 @@ nltk.download('averaged_perceptron_tagger')
 nltk.download('stopwords')
 st_words = stopwords.words('english')
 sys.path.insert(0,"/home2/tathagato/summarization/MACSUM/naacl/speciteller/python3_code")
-from speciteller import process_strings_parallel
+#from speciteller import process_strings_parallel
 
 
 def get_specificity_scores(texts):

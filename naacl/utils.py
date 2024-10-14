@@ -12,7 +12,7 @@ from torch.optim import AdamW
 import os 
 import wandb
 from peft import get_peft_config, get_peft_model, LoraConfig, TaskType, prepare_model_for_kbit_training, PeftConfig, PeftModel
-
+import copy
 
 
 
@@ -56,6 +56,18 @@ def load_dpo_adapter_model(config, quantization_config, is_trainable = False, ad
     model.set_adapter(adapter_name)
     return model
 
+def return_changed_layers(old_state_dict, new_state_dict):
+    # ensure that the keys are the same
+    assert old_state_dict.keys() == new_state_dict.keys()
+    changed_layers = {}
+    for key in old_state_dict.keys():
+        old_state_dict_params = old_state_dict[key]
+        new_state_dict_params = new_state_dict[key]
+        if torch.allclose(old_state_dict_params, new_state_dict_params):
+            continue
+        else:
+            changed_layers[key] = (old_state_dict_params, new_state_dict_params)
+            print(f"Layer {key} has changed")
 
 def load_fused_dpo_models(config, quantization_config, is_trainable = False, adapter_name = None, combination_type = 'linear'):
     latest_checkpont_1 = get_latest_checkpoint_path(config['checkpoint_paths'][0], config['attributes'][0])
@@ -379,7 +391,26 @@ def collate_function(tokenizer, config):
         }
 
     return collate_fn
+def get_detached_state_dict(model):
+    # Get the state dict of the model
+    state_dict = model.state_dict()
+    
+    # Create a deep copy of the state dict
+    detached_state_dict = copy.deepcopy(state_dict)
+    
+    # Detach all tensors in the copied state dict
+    for key, value in detached_state_dict.items():
+        if isinstance(value, torch.Tensor):
+            detached_state_dict[key] = value.detach().clone().cpu()
+    
+    return detached_state_dict
 
+def print_layers_with_requires_grad(model):
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            print(f"{name} is trainable")
+        else:
+            print(f"{name} is not trainable")
 
 
 @timer 
